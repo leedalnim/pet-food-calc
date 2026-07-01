@@ -508,6 +508,12 @@
           </div>
         </div>
       </div>
+      <div class="row">
+        <div class="field">
+          <label for="note">비고 (선택)</label>
+          <input type="text" id="note" placeholder="예: 유통기한 임박, 지마켓 쿠폰가" autocomplete="off" />
+        </div>
+      </div>
       <div class="hint">24개들이 박스처럼 묶음으로 살 때는 수량을 입력하면 개당·g당 단가를 같이 계산해요</div>
 
       <div class="unit-price">
@@ -605,6 +611,7 @@
   const weightEl = document.getElementById('weight');
   const qtyEl = document.getElementById('qty');
   const priceEl = document.getElementById('price');
+  const noteEl = document.getElementById('note');
   const unitPriceValueEl = document.getElementById('unitPriceValue');
   const unitPriceSubEl = document.getElementById('unitPriceSub');
   const badgesEl = document.getElementById('badges');
@@ -785,6 +792,7 @@
     const w = parseFloat(weightEl.value);
     const p = parseFloat(priceEl.value);
     const qty = getQty();
+    const note = noteEl.value.trim();
     if (!isValid(category, meta.categories)) return;
     if (!isValid(product, meta.productsByCategory[category] || [])) return;
     if (!w || !p) return;
@@ -799,13 +807,14 @@
       const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams: w, price: perUnitPrice })
+        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams: w, price: perUnitPrice, note })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
 
       saveBtn.classList.add('saved');
       saveBtn.textContent = '저장 완료 ✓';
+      noteEl.value = '';
       await loadMeta();
       await runCompare();
     } catch (err) {
@@ -862,9 +871,14 @@
     const stroke = selected ? '#E85F32' : '#AFA18C';
     const bellyDip = 34 + t * 17;
     const chestX = 70 + t * 6;
+    const cx = chestX + 4; // 얼굴 중심
     return `
     <svg viewBox="0 0 100 55" xmlns="http://www.w3.org/2000/svg">
       <path d="M8,26 C1,20 1,9 10,6" stroke="${stroke}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <path d="M${(cx - 12).toFixed(1)},13 L${(cx - 11).toFixed(1)},-2 L${(cx - 1).toFixed(1)},10 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"/>
+      <path d="M${(cx + 12).toFixed(1)},13 L${(cx + 11).toFixed(1)},-2 L${(cx + 1).toFixed(1)},10 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.5" stroke-linejoin="round"/>
       <path d="M10,28
         C4,14 16,6 28,8
         C42,2 60,2 70,${(6 + t * 2).toFixed(1)}
@@ -874,10 +888,6 @@
         C${(chestX - 10).toFixed(1)},${(bellyDip + 6).toFixed(1)} 40,${(bellyDip + 6).toFixed(1)} 24,${bellyDip.toFixed(1)}
         C14,${(bellyDip - 4).toFixed(1)} 8,${(bellyDip - 14).toFixed(1)} 10,28 Z"
         fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
-      <path d="M${(chestX + 1).toFixed(1)},10 L${(chestX - 4).toFixed(1)},1 L${(chestX + 7).toFixed(1)},6.5 Z"
-        fill="${fill}" stroke="${stroke}" stroke-width="1.4" stroke-linejoin="round"/>
-      <path d="M${(chestX + 11).toFixed(1)},9 L${(chestX + 11).toFixed(1)},0.5 L${(chestX + 18).toFixed(1)},7 Z"
-        fill="${fill}" stroke="${stroke}" stroke-width="1.4" stroke-linejoin="round"/>
       <circle cx="${(chestX + 11).toFixed(1)}" cy="19" r="1.8" fill="#2E2A26"/>
       <path d="M${(chestX + 4).toFixed(1)},23 l-7,-1.5 M${(chestX + 4).toFixed(1)},25.5 l-7,1.5"
         stroke="${stroke}" stroke-width="1" stroke-linecap="round"/>
