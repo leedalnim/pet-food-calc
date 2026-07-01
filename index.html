@@ -68,12 +68,15 @@
     flex-direction: column;
     gap: 6px;
   }
+  .field.narrow { flex: 0 0 96px; }
   label {
     font-size: 12px;
     font-weight: 700;
     color: var(--sub);
   }
-  select, input[type="number"] {
+  select,
+  input[type="number"],
+  input[type="text"] {
     width: 100%;
     padding: 12px 14px;
     border-radius: 12px;
@@ -102,6 +105,11 @@
     font-size: 13px;
     color: var(--sub);
   }
+  .hint {
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: -4px;
+  }
   .unit-price {
     margin-top: 18px;
     text-align: center;
@@ -124,6 +132,11 @@
     font-size: 15px;
     font-weight: 600;
     margin-left: 2px;
+  }
+  .unit-price .sub {
+    margin-top: 4px;
+    font-size: 12px;
+    color: var(--sub);
   }
   .badges {
     display: flex;
@@ -178,7 +191,6 @@
     align-items: center;
     gap: 6px;
   }
-  .compare-list { display: flex; flex-direction: column; gap: 8px; }
   .compare-item {
     display: flex;
     align-items: center;
@@ -187,9 +199,8 @@
     border-radius: 12px;
     background: #FBFAF7;
   }
-  .compare-item.me {
-    background: var(--accent-soft);
-    border: 1.5px solid var(--accent);
+  .compare-item.best {
+    background: var(--mint-soft);
   }
   .compare-item .rank {
     font-size: 12px;
@@ -197,6 +208,7 @@
     color: var(--sub);
     width: 22px;
   }
+  .compare-item.best .rank { color: var(--mint); }
   .compare-item .name {
     flex: 1;
     font-size: 13px;
@@ -206,6 +218,13 @@
   .compare-item .price {
     font-size: 13px;
     font-weight: 800;
+  }
+  .compare-lookup {
+    margin-top: 12px;
+  }
+  .compare-result {
+    margin-top: 10px;
+    display: none;
   }
   .save-btn {
     width: 100%;
@@ -222,12 +241,6 @@
   }
   .save-btn:disabled { opacity: 0.4; cursor: default; }
   .save-btn.saved { background: var(--mint); }
-  .empty-note {
-    font-size: 13px;
-    color: var(--sub);
-    text-align: center;
-    padding: 12px 0;
-  }
   .footer-note {
     text-align: center;
     font-size: 11px;
@@ -258,19 +271,71 @@
     height: 1px;
     background: var(--line);
   }
-  .diet-result {
-    margin-top: 16px;
-    padding: 18px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, var(--mint-soft), #F1FAF7);
-    font-size: 14px;
-    line-height: 1.7;
+  .bcs-visual {
+    display: flex;
+    justify-content: space-between;
+    gap: 2px;
+    margin-top: 4px;
+  }
+  .bcs-cat {
+    background: none;
+    border: none;
+    padding: 4px 2px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    flex: 1;
+    border-radius: 10px;
+  }
+  .bcs-cat:hover { background: #F5F0E8; }
+  .bcs-cat svg { width: 100%; height: 34px; }
+  .bcs-cat .n {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+  .bcs-cat.selected .n { color: var(--accent); }
+  .target-highlight {
+    margin-top: 14px;
+    padding: 16px;
+    border-radius: 14px;
+    background: var(--mint-soft);
+    text-align: center;
+  }
+  .target-highlight.over { background: var(--rose-soft); }
+  .target-highlight .t-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sub);
+  }
+  .target-highlight .t-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--mint);
+    margin-top: 4px;
+  }
+  .target-highlight.over .t-value { color: var(--rose); }
+  .target-highlight .t-value span {
+    font-size: 15px;
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .target-highlight .t-diff {
+    font-size: 13px;
+    color: var(--sub);
+    margin-top: 4px;
+  }
+  .diet-detail {
+    margin-top: 14px;
+    font-size: 13px;
+    line-height: 1.8;
     display: none;
   }
-  .diet-result strong { color: var(--mint); }
-  .diet-result.over strong { color: var(--rose); }
+  .diet-detail strong { color: var(--ink); }
   .bcs-guide {
-    margin-top: 12px;
+    margin-top: 14px;
     font-size: 12px;
     color: var(--sub);
   }
@@ -309,24 +374,35 @@
       </div>
       <div class="row">
         <div class="field">
-          <label for="weight">무게</label>
+          <label for="weight">개당 무게</label>
           <div class="input-unit">
             <input type="number" id="weight" placeholder="85" min="0" />
             <span>g</span>
           </div>
         </div>
+        <div class="field narrow">
+          <label for="qty">수량</label>
+          <div class="input-unit">
+            <input type="number" id="qty" placeholder="1" min="1" step="1" />
+            <span>개</span>
+          </div>
+        </div>
+      </div>
+      <div class="row">
         <div class="field">
-          <label for="price">가격</label>
+          <label for="price">총 가격</label>
           <div class="input-unit">
             <input type="number" id="price" placeholder="2320" min="0" />
             <span>원</span>
           </div>
         </div>
       </div>
+      <div class="hint">24개들이 박스처럼 묶음으로 살 때는 수량을 입력하면 개당·g당 단가를 같이 계산해요</div>
 
       <div class="unit-price">
         <div class="label">계산된 단가</div>
         <div class="value" id="unitPriceValue">- <span>원/g</span></div>
+        <div class="sub" id="unitPriceSub"></div>
       </div>
 
       <div class="badges" id="badges"></div>
@@ -351,8 +427,15 @@
     </div>
 
     <div class="card" id="compareCard" style="display:none;">
-      <div class="section-title">🔍 같은 카테고리 다른 제품 최저가</div>
-      <div class="compare-list" id="compareList"></div>
+      <div class="section-title">🔍 같은 카테고리 다른 제품과 비교</div>
+      <div class="compare-item best" id="compareBest"></div>
+
+      <div class="field compare-lookup">
+        <label for="compareProduct">다른 제품 최저가 검색해서 보기</label>
+        <input list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
+        <datalist id="compareProductList"></datalist>
+      </div>
+      <div class="compare-item compare-result" id="compareResult"></div>
     </div>
 
     <div class="footer-note">원본 구매 데이터는 비공개 스프레드시트에 안전하게 보관됩니다</div>
@@ -373,9 +456,12 @@
           </div>
         </div>
       </div>
-      <div class="row">
+
+      <label style="display:block; margin-top:14px;">신체상태점수(BCS) 선택</label>
+      <div class="bcs-visual" id="bcsVisual"></div>
+
+      <div class="row" style="margin-top:10px;">
         <div class="field">
-          <label for="petBcs">신체상태점수(BCS)</label>
           <select id="petBcs">
             <option value="1">1 · 심각한 마름</option>
             <option value="2">2 · 마름</option>
@@ -391,7 +477,7 @@
       </div>
 
       <details class="bcs-guide">
-        <summary>BCS 점수 가이드 보기</summary>
+        <summary>BCS 점수 가이드 자세히 보기</summary>
         <ul>
           <li>1 심각한 마름 — 갈비뼈·척추·골반이 두드러지게 보이고 만져짐, 체지방 거의 없음</li>
           <li>2 마름 — 갈비뼈가 쉽게 만져지고 살짝 보임, 근육량 감소</li>
@@ -405,7 +491,13 @@
         </ul>
       </details>
 
-      <div class="diet-result" id="dietResult"></div>
+      <div class="target-highlight" id="targetHighlight" style="display:none;">
+        <div class="t-label" id="targetLabel">목표 체중</div>
+        <div class="t-value" id="targetValue">-<span>kg</span></div>
+        <div class="t-diff" id="targetDiff"></div>
+      </div>
+
+      <div class="diet-detail" id="dietDetail"></div>
     </div>
   </div>
 
@@ -416,8 +508,10 @@
   const categoryEl = document.getElementById('category');
   const productEl = document.getElementById('product');
   const weightEl = document.getElementById('weight');
+  const qtyEl = document.getElementById('qty');
   const priceEl = document.getElementById('price');
   const unitPriceValueEl = document.getElementById('unitPriceValue');
+  const unitPriceSubEl = document.getElementById('unitPriceSub');
   const badgesEl = document.getElementById('badges');
   const saveBtn = document.getElementById('saveBtn');
   const toastEl = document.getElementById('toast');
@@ -427,9 +521,13 @@
   const minSub = document.getElementById('minSub');
   const avgValue = document.getElementById('avgValue');
   const avgSub = document.getElementById('avgSub');
-  const compareList = document.getElementById('compareList');
+  const compareBestEl = document.getElementById('compareBest');
+  const compareProductEl = document.getElementById('compareProduct');
+  const compareProductListEl = document.getElementById('compareProductList');
+  const compareResultEl = document.getElementById('compareResult');
 
   let meta = { categories: [], productsByCategory: {} };
+  let lastCategoryComparison = [];
   let compareTimer = null;
 
   function won(n) {
@@ -438,6 +536,11 @@
 
   function fmtPerGram(n) {
     return n.toFixed(1) + '원/g';
+  }
+
+  function getQty() {
+    const q = parseInt(qtyEl.value, 10);
+    return q > 0 ? q : 1;
   }
 
   async function loadMeta() {
@@ -456,12 +559,16 @@
   function updateUnitPrice() {
     const w = parseFloat(weightEl.value);
     const p = parseFloat(priceEl.value);
+    const qty = getQty();
     if (w > 0 && p > 0) {
-      const perGram = p / w;
-      unitPriceValueEl.innerHTML = `${fmtPerGram(perGram).replace('원/g', '')}<span>원/g</span>`;
+      const totalWeight = w * qty;
+      const perGram = p / totalWeight;
+      unitPriceValueEl.innerHTML = `${perGram.toFixed(1)}<span>원/g</span>`;
+      unitPriceSubEl.textContent = qty > 1 ? `개당 ${won(p / qty)}원 · 총 ${totalWeight.toLocaleString('ko-KR')}g` : '';
       saveBtn.disabled = false;
     } else {
       unitPriceValueEl.innerHTML = `-<span>원/g</span>`;
+      unitPriceSubEl.textContent = '';
       saveBtn.disabled = true;
     }
   }
@@ -502,35 +609,57 @@
     avgSub.textContent = `${w}g 환산 ${won(stats.avgPricePerGram * w)}원 · 총 ${stats.count}건`;
   }
 
-  function renderCompareList(list, currentProduct) {
-    if (!list || list.length === 0) {
+  function renderCompare(list, currentProduct) {
+    lastCategoryComparison = list || [];
+    if (!lastCategoryComparison.length) {
       compareCard.style.display = 'none';
       return;
     }
     compareCard.style.display = 'block';
-    compareList.innerHTML = list.map((item, i) => `
-      <div class="compare-item ${item.product === currentProduct ? 'me' : ''}">
-        <span class="rank">${i + 1}</span>
-        <span class="name">${item.product}</span>
-        <span class="price">${fmtPerGram(item.minPricePerGram)}</span>
-      </div>
-    `).join('');
+
+    const best = lastCategoryComparison[0];
+    compareBestEl.innerHTML = `
+      <span class="rank">1위</span>
+      <span class="name">${best.product}${best.product === currentProduct ? ' (현재 제품)' : ''}</span>
+      <span class="price">${fmtPerGram(best.minPricePerGram)}</span>`;
+
+    const others = lastCategoryComparison.filter(item => item.product !== currentProduct);
+    compareProductListEl.innerHTML = others.map(item => `<option value="${item.product}"></option>`).join('');
+    compareProductEl.value = '';
+    compareResultEl.style.display = 'none';
+  }
+
+  function showCompareResult() {
+    const query = compareProductEl.value.trim();
+    const match = lastCategoryComparison.find(item => item.product === query);
+    if (!match) {
+      compareResultEl.style.display = 'none';
+      return;
+    }
+    const rank = lastCategoryComparison.findIndex(item => item.product === query) + 1;
+    compareResultEl.style.display = 'flex';
+    compareResultEl.innerHTML = `
+      <span class="rank">${rank}위</span>
+      <span class="name">${match.product}</span>
+      <span class="price">${fmtPerGram(match.minPricePerGram)}</span>`;
   }
 
   async function runCompare() {
     const category = categoryEl.value;
     const product = productEl.value;
     if (!category || !product) return;
-    const weight = parseFloat(weightEl.value) || 0;
-    const price = parseFloat(priceEl.value) || 0;
+    const w = parseFloat(weightEl.value) || 0;
+    const p = parseFloat(priceEl.value) || 0;
+    const qty = getQty();
+    const totalWeight = w * qty;
 
-    const params = new URLSearchParams({ action: 'compare', category, product, weight, price });
+    const params = new URLSearchParams({ action: 'compare', category, product, weight: totalWeight, price: p });
     const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await res.json();
 
     renderBadges(data.productStats);
-    renderStats(data.productStats, weight);
-    renderCompareList(data.categoryComparison, product);
+    renderStats(data.productStats, totalWeight);
+    renderCompare(data.categoryComparison, product);
   }
 
   function scheduleCompare() {
@@ -541,9 +670,12 @@
   async function saveRecord() {
     const category = categoryEl.value;
     const product = productEl.value;
-    const weightGrams = parseFloat(weightEl.value);
-    const price = parseFloat(priceEl.value);
-    if (!category || !product || !weightGrams || !price) return;
+    const w = parseFloat(weightEl.value);
+    const p = parseFloat(priceEl.value);
+    const qty = getQty();
+    if (!category || !product || !w || !p) return;
+
+    const perUnitPrice = Math.round(p / qty);
 
     saveBtn.disabled = true;
     saveBtn.textContent = '저장 중...';
@@ -553,7 +685,7 @@
       const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams, price })
+        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams: w, price: perUnitPrice })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
@@ -573,7 +705,9 @@
   categoryEl.addEventListener('change', () => { fillProducts(); scheduleCompare(); });
   productEl.addEventListener('change', scheduleCompare);
   weightEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
+  qtyEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
   priceEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
+  compareProductEl.addEventListener('input', showCompareResult);
   saveBtn.addEventListener('click', saveRecord);
 
   loadMeta();
@@ -582,7 +716,56 @@
   const petNameEl = document.getElementById('petName');
   const petWeightEl = document.getElementById('petWeight');
   const petBcsEl = document.getElementById('petBcs');
-  const dietResultEl = document.getElementById('dietResult');
+  const bcsVisualEl = document.getElementById('bcsVisual');
+  const targetHighlightEl = document.getElementById('targetHighlight');
+  const targetLabelEl = document.getElementById('targetLabel');
+  const targetValueEl = document.getElementById('targetValue');
+  const targetDiffEl = document.getElementById('targetDiff');
+  const dietDetailEl = document.getElementById('dietDetail');
+
+  const BCS_LABELS = ['심각한 마름', '마름', '심각한 저체중', '저체중', '정상', '과체중', '심각한 과체중', '비만', '심각한 비만'];
+
+  function catSvg(score, selected) {
+    const t = (score - 1) / 8;
+    const fill = selected ? '#FF7A52' : '#D8CDBE';
+    const stroke = selected ? '#E85F32' : '#B8AC98';
+    const bellyDip = 34 + t * 16;
+    const chestX = 70 + t * 6;
+    return `
+    <svg viewBox="0 0 100 55" xmlns="http://www.w3.org/2000/svg">
+      <path d="M10,28
+        C4,14 16,${(6 - t * 2).toFixed(1)} 28,8
+        C42,2 60,2 70,${(6 + t * 2).toFixed(1)}
+        C${(chestX + 14).toFixed(1)},${(8 + t * 2).toFixed(1)} ${(chestX + 18).toFixed(1)},14 ${(chestX + 16).toFixed(1)},20
+        C${(chestX + 18).toFixed(1)},26 ${(chestX + 14).toFixed(1)},32 ${(chestX + 8).toFixed(1)},36
+        L${(chestX + 6).toFixed(1)},44
+        C${(chestX - 10).toFixed(1)},${(bellyDip + 6).toFixed(1)} 40,${(bellyDip + 6).toFixed(1)} 24,${bellyDip.toFixed(1)}
+        C14,${(bellyDip - 4).toFixed(1)} 8,${(bellyDip - 14).toFixed(1)} 10,28 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round"/>
+      <path d="M${(chestX + 2).toFixed(1)},10 L${(chestX - 2).toFixed(1)},2 L${(chestX + 8).toFixed(1)},7 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.2" stroke-linejoin="round"/>
+      <circle cx="${(chestX + 10).toFixed(1)}" cy="18" r="1.6" fill="#2E2A26"/>
+      <path d="M8,26 C1,20 1,10 9,7" stroke="${stroke}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function renderBcsVisual() {
+    const current = parseInt(petBcsEl.value, 10);
+    bcsVisualEl.innerHTML = '';
+    for (let s = 1; s <= 9; s++) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'bcs-cat' + (s === current ? ' selected' : '');
+      btn.title = `${s} · ${BCS_LABELS[s - 1]}`;
+      btn.innerHTML = `${catSvg(s, s === current)}<span class="n">${s}</span>`;
+      btn.addEventListener('click', () => {
+        petBcsEl.value = String(s);
+        renderBcsVisual();
+        calcDiet();
+      });
+      bcsVisualEl.appendChild(btn);
+    }
+  }
 
   function calcRER(weightKg) {
     return weightKg < 2 ? 70 * Math.pow(weightKg, 0.75) : 30 * weightKg + 70;
@@ -594,7 +777,8 @@
     const bcs = parseInt(petBcsEl.value, 10);
 
     if (!weight || weight <= 0) {
-      dietResultEl.style.display = 'none';
+      targetHighlightEl.style.display = 'none';
+      dietDetailEl.style.display = 'none';
       return;
     }
 
@@ -603,12 +787,16 @@
     const calories = Math.round(calcRER(weight));
     const water = Math.round(targetWeight * 44);
 
-    dietResultEl.classList.remove('over');
-    dietResultEl.style.display = 'block';
+    targetHighlightEl.style.display = 'block';
+    dietDetailEl.style.display = 'block';
+    targetHighlightEl.classList.toggle('over', diff > 0.01);
+
+    targetValueEl.innerHTML = `${targetWeight.toFixed(2)}<span>kg</span>`;
 
     if (Math.abs(diff) < 0.01) {
-      dietResultEl.innerHTML = `
-        <strong>${name}</strong>는 지금 적정 체중이에요! 🎉<br/>
+      targetLabelEl.textContent = `${name}의 목표 체중 (지금이 적정 체중이에요 🎉)`;
+      targetDiffEl.textContent = '';
+      dietDetailEl.innerHTML = `
         하루에 <strong>${calories}kcal</strong>를 급여하고
         <strong>${water}ml</strong>의 음수량을 유지해주세요 💧`;
       return;
@@ -618,19 +806,20 @@
     const durationWeeks = Math.max(1, Math.round(Math.abs(diff) / weeklyRate));
     const perWeek = (Math.abs(diff) / durationWeeks).toFixed(2);
     const verb = diff > 0 ? '감량' : '증량';
-    if (diff > 0) dietResultEl.classList.add('over');
 
-    dietResultEl.innerHTML = `
-      <strong>${name}</strong>의 목표 체중은 <strong>${Math.abs(diff).toFixed(2)}kg</strong> ${verb}한
-      <strong>${targetWeight.toFixed(2)}kg</strong> 입니다.<br/>
+    targetLabelEl.textContent = `${name}의 목표 체중`;
+    targetDiffEl.textContent = `현재보다 ${Math.abs(diff).toFixed(2)}kg ${verb}`;
+
+    dietDetailEl.innerHTML = `
       1주일에 <strong>${perWeek}kg</strong>씩 <strong>${durationWeeks}주간</strong> 관리가 필요해요 🔥<br/>
       간식을 포함하여 하루에 <strong>${calories}kcal</strong>를 급여하고
       <strong>${water}ml</strong>의 음수량을 채워주세요 💧`;
   }
 
+  renderBcsVisual();
   petNameEl.addEventListener('input', calcDiet);
   petWeightEl.addEventListener('input', calcDiet);
-  petBcsEl.addEventListener('change', calcDiet);
+  petBcsEl.addEventListener('change', () => { renderBcsVisual(); calcDiet(); });
 </script>
 </body>
 </html>
