@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>🐾 사료 가격 계산기</title>
+<title>🐾 반려동물 계산기</title>
 <link rel="stylesheet" as="style" crossorigin
   href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 <style>
@@ -241,6 +241,51 @@
     margin-top: 8px;
     display: none;
   }
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 28px 0 16px;
+  }
+  .divider span {
+    font-size: 15px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+  .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--line);
+  }
+  .diet-result {
+    margin-top: 16px;
+    padding: 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--mint-soft), #F1FAF7);
+    font-size: 14px;
+    line-height: 1.7;
+    display: none;
+  }
+  .diet-result strong { color: var(--mint); }
+  .diet-result.over strong { color: var(--rose); }
+  .bcs-guide {
+    margin-top: 12px;
+    font-size: 12px;
+    color: var(--sub);
+  }
+  .bcs-guide summary {
+    cursor: pointer;
+    font-weight: 700;
+    color: var(--ink);
+  }
+  .bcs-guide ul {
+    margin: 10px 0 0;
+    padding-left: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
 </style>
 </head>
 <body>
@@ -311,6 +356,57 @@
     </div>
 
     <div class="footer-note">원본 구매 데이터는 비공개 스프레드시트에 안전하게 보관됩니다</div>
+
+    <div class="divider"><span>🐈 적정 체중 계산기</span></div>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label for="petName">이름 (선택)</label>
+          <input type="text" id="petName" placeholder="콩" />
+        </div>
+        <div class="field">
+          <label for="petWeight">현재 체중</label>
+          <div class="input-unit">
+            <input type="number" id="petWeight" placeholder="6.7" min="0" step="0.01" />
+            <span>kg</span>
+          </div>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="petBcs">신체상태점수(BCS)</label>
+          <select id="petBcs">
+            <option value="1">1 · 심각한 마름</option>
+            <option value="2">2 · 마름</option>
+            <option value="3">3 · 심각한 저체중</option>
+            <option value="4">4 · 저체중</option>
+            <option value="5" selected>5 · 정상</option>
+            <option value="6">6 · 과체중</option>
+            <option value="7">7 · 심각한 과체중</option>
+            <option value="8">8 · 비만</option>
+            <option value="9">9 · 심각한 비만</option>
+          </select>
+        </div>
+      </div>
+
+      <details class="bcs-guide">
+        <summary>BCS 점수 가이드 보기</summary>
+        <ul>
+          <li>1 심각한 마름 — 갈비뼈·척추·골반이 두드러지게 보이고 만져짐, 체지방 거의 없음</li>
+          <li>2 마름 — 갈비뼈가 쉽게 만져지고 살짝 보임, 근육량 감소</li>
+          <li>3 심각한 저체중 — 갈비뼈가 최소한의 지방으로 만져짐, 허리선 뚜렷</li>
+          <li>4 저체중 — 갈비뼈가 얇은 지방층 아래 쉽게 만져짐, 허리선 있음</li>
+          <li>5 정상 — 갈비뼈가 적당한 지방 아래 만져짐, 위에서 봤을 때 허리선 뚜렷</li>
+          <li>6 과체중 — 갈비뼈가 지방층으로 잘 만져지지 않음, 허리선 희미</li>
+          <li>7 심각한 과체중 — 갈비뼈를 만지기 어려움, 허리선 거의 없음, 옆구리 처짐</li>
+          <li>8 비만 — 갈비뼈가 두꺼운 지방으로 덮여 만져지지 않음, 배 처짐</li>
+          <li>9 심각한 비만 — 가슴·등·목에 지방 축적 뚜렷, 걷기 불편할 정도</li>
+        </ul>
+      </details>
+
+      <div class="diet-result" id="dietResult"></div>
+    </div>
   </div>
 
 <script>
@@ -481,6 +577,60 @@
   saveBtn.addEventListener('click', saveRecord);
 
   loadMeta();
+
+  // ── 적정 체중 계산기 ──
+  const petNameEl = document.getElementById('petName');
+  const petWeightEl = document.getElementById('petWeight');
+  const petBcsEl = document.getElementById('petBcs');
+  const dietResultEl = document.getElementById('dietResult');
+
+  function calcRER(weightKg) {
+    return weightKg < 2 ? 70 * Math.pow(weightKg, 0.75) : 30 * weightKg + 70;
+  }
+
+  function calcDiet() {
+    const name = petNameEl.value.trim() || '반려동물';
+    const weight = parseFloat(petWeightEl.value);
+    const bcs = parseInt(petBcsEl.value, 10);
+
+    if (!weight || weight <= 0) {
+      dietResultEl.style.display = 'none';
+      return;
+    }
+
+    const targetWeight = weight / (1 + 0.1 * (bcs - 5));
+    const diff = weight - targetWeight;
+    const calories = Math.round(calcRER(weight));
+    const water = Math.round(targetWeight * 44);
+
+    dietResultEl.classList.remove('over');
+    dietResultEl.style.display = 'block';
+
+    if (Math.abs(diff) < 0.01) {
+      dietResultEl.innerHTML = `
+        <strong>${name}</strong>는 지금 적정 체중이에요! 🎉<br/>
+        하루에 <strong>${calories}kcal</strong>를 급여하고
+        <strong>${water}ml</strong>의 음수량을 유지해주세요 💧`;
+      return;
+    }
+
+    const weeklyRate = weight * 0.01;
+    const durationWeeks = Math.max(1, Math.round(Math.abs(diff) / weeklyRate));
+    const perWeek = (Math.abs(diff) / durationWeeks).toFixed(2);
+    const verb = diff > 0 ? '감량' : '증량';
+    if (diff > 0) dietResultEl.classList.add('over');
+
+    dietResultEl.innerHTML = `
+      <strong>${name}</strong>의 목표 체중은 <strong>${Math.abs(diff).toFixed(2)}kg</strong> ${verb}한
+      <strong>${targetWeight.toFixed(2)}kg</strong> 입니다.<br/>
+      1주일에 <strong>${perWeek}kg</strong>씩 <strong>${durationWeeks}주간</strong> 관리가 필요해요 🔥<br/>
+      간식을 포함하여 하루에 <strong>${calories}kcal</strong>를 급여하고
+      <strong>${water}ml</strong>의 음수량을 채워주세요 💧`;
+  }
+
+  petNameEl.addEventListener('input', calcDiet);
+  petWeightEl.addEventListener('input', calcDiet);
+  petBcsEl.addEventListener('change', calcDiet);
 </script>
 </body>
 </html>
