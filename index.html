@@ -80,8 +80,8 @@
     width: 100%;
     padding: 12px 14px;
     border-radius: 12px;
-    border: 1px solid #F1EAE0;
-    background: #FCFAF6;
+    border: 1px solid #E7DECE;
+    background-color: #FCFAF6;
     font-size: 15px;
     font-family: inherit;
     font-weight: 400;
@@ -92,13 +92,13 @@
   select:focus, input:focus {
     outline: none;
     border-color: var(--accent);
-    background: #fff;
+    background-color: #fff;
   }
   input::placeholder { color: #C2B7A6; }
   input[type="text"]:not(:placeholder-shown),
   input[type="number"]:not(:placeholder-shown) {
-    background: #fff;
-    border-color: #E7DECE;
+    background-color: #fff;
+    border-color: #DED2BE;
     color: var(--ink);
     font-weight: 700;
   }
@@ -130,7 +130,8 @@
   .hint {
     font-size: 11px;
     color: var(--sub);
-    margin-top: -4px;
+    margin-top: 10px;
+    line-height: 1.5;
   }
   .unit-price {
     margin-top: 18px;
@@ -359,34 +360,105 @@
     color: var(--sub);
     margin-top: 4px;
   }
-  .diet-detail {
-    margin-top: 10px;
-    padding: 16px;
-    border-radius: 14px;
-    background: var(--mint-soft);
-    font-size: 15px;
+  .target-highlight .t-detail {
+    margin-top: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(46, 42, 38, 0.08);
+    font-size: 14px;
     line-height: 1.8;
-    text-align: center;
     color: var(--ink);
     display: none;
   }
-  .diet-detail strong { color: var(--mint); font-weight: 800; }
-  .bcs-guide {
+  .target-highlight .t-detail strong { color: var(--mint); font-weight: 800; }
+  .target-highlight.over .t-detail strong { color: var(--rose); }
+  .bcs-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     margin-top: 14px;
+  }
+  .bcs-guide-btn {
+    background: none;
+    border: none;
+    font-family: inherit;
     font-size: 12px;
-    color: var(--sub);
-  }
-  .bcs-guide summary {
-    cursor: pointer;
     font-weight: 700;
-    color: var(--ink);
+    color: var(--accent);
+    cursor: pointer;
+    padding: 4px 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
   }
-  .bcs-guide ul {
-    margin: 10px 0 0;
-    padding-left: 18px;
+  .bcs-guide-btn:hover { text-decoration: underline; }
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(46, 42, 38, 0.45);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 100;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--card);
+    border-radius: 18px;
+    width: 100%;
+    max-width: 420px;
+    max-height: 82vh;
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    overflow: hidden;
+    box-shadow: 0 16px 48px rgba(46, 42, 38, 0.28);
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--line);
+  }
+  .modal-head .title { font-size: 15px; font-weight: 800; }
+  .modal-close {
+    background: none;
+    border: none;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--sub);
+    cursor: pointer;
+    padding: 2px 6px;
+  }
+  .modal-body {
+    padding: 8px 16px 16px;
+    overflow-y: auto;
+  }
+  .bcs-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 8px;
+    border-bottom: 1px solid #F3EDE3;
+  }
+  .bcs-row:last-child { border-bottom: none; }
+  .bcs-row.ideal { background: var(--mint-soft); border-radius: 12px; border-bottom: none; }
+  .bcs-row-cat {
+    flex: 0 0 62px;
+    height: 46px;
+  }
+  .bcs-row-cat svg { width: 100%; height: 100%; }
+  .bcs-row-title {
+    font-size: 13px;
+    font-weight: 800;
+    margin-bottom: 3px;
+  }
+  .bcs-row-title b { color: var(--accent); margin-right: 4px; }
+  .bcs-row.ideal .bcs-row-title b { color: var(--mint); }
+  .bcs-row-desc {
+    font-size: 12px;
+    color: var(--sub);
+    line-height: 1.5;
   }
 </style>
 </head>
@@ -402,12 +474,12 @@
       <div class="row">
         <div class="field">
           <label for="category">카테고리</label>
-          <input class="combo-input" list="categoryList" id="category" placeholder="카테고리 선택" autocomplete="off" />
+          <input type="text" class="combo-input" list="categoryList" id="category" placeholder="카테고리 선택" autocomplete="off" />
           <datalist id="categoryList"></datalist>
         </div>
         <div class="field">
           <label for="product">제품명</label>
-          <input class="combo-input" list="productList" id="product" placeholder="제품명 검색" autocomplete="off" />
+          <input type="text" class="combo-input" list="productList" id="product" placeholder="제품명 검색" autocomplete="off" />
           <datalist id="productList"></datalist>
         </div>
       </div>
@@ -471,7 +543,7 @@
 
       <div class="field compare-lookup">
         <label for="compareProduct">다른 제품 최저가 검색해서 보기</label>
-        <input class="combo-input" list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
+        <input type="text" class="combo-input" list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
         <datalist id="compareProductList"></datalist>
       </div>
       <div class="compare-item compare-result" id="compareResult"></div>
@@ -496,32 +568,29 @@
         </div>
       </div>
 
-      <label style="display:block; margin-top:14px;">신체상태점수(BCS) 선택</label>
+      <div class="bcs-header">
+        <label>신체상태점수(BCS) 선택</label>
+        <button type="button" class="bcs-guide-btn" id="bcsGuideBtn">📖 점수 가이드 자세히 보기</button>
+      </div>
       <div class="bcs-visual" id="bcsVisual"></div>
       <div class="bcs-caption" id="bcsCaption"></div>
-
-      <details class="bcs-guide">
-        <summary>BCS 점수 가이드 자세히 보기</summary>
-        <ul>
-          <li>1 심각한 마름 — 갈비뼈·척추·골반이 두드러지게 보이고 만져짐, 체지방 거의 없음</li>
-          <li>2 마름 — 갈비뼈가 쉽게 만져지고 살짝 보임, 근육량 감소</li>
-          <li>3 심각한 저체중 — 갈비뼈가 최소한의 지방으로 만져짐, 허리선 뚜렷</li>
-          <li>4 저체중 — 갈비뼈가 얇은 지방층 아래 쉽게 만져짐, 허리선 있음</li>
-          <li>5 정상 — 갈비뼈가 적당한 지방 아래 만져짐, 위에서 봤을 때 허리선 뚜렷</li>
-          <li>6 과체중 — 갈비뼈가 지방층으로 잘 만져지지 않음, 허리선 희미</li>
-          <li>7 심각한 과체중 — 갈비뼈를 만지기 어려움, 허리선 거의 없음, 옆구리 처짐</li>
-          <li>8 비만 — 갈비뼈가 두꺼운 지방으로 덮여 만져지지 않음, 배 처짐</li>
-          <li>9 심각한 비만 — 가슴·등·목에 지방 축적 뚜렷, 걷기 불편할 정도</li>
-        </ul>
-      </details>
 
       <div class="target-highlight" id="targetHighlight" style="display:none;">
         <div class="t-label" id="targetLabel">목표 체중</div>
         <div class="t-value" id="targetValue">-<span>kg</span></div>
         <div class="t-diff" id="targetDiff"></div>
+        <div class="t-detail" id="dietDetail"></div>
       </div>
+    </div>
+  </div>
 
-      <div class="diet-detail" id="dietDetail"></div>
+  <div class="modal-overlay" id="bcsModal">
+    <div class="modal">
+      <div class="modal-head">
+        <span class="title">🐈 신체상태점수(BCS) 가이드</span>
+        <button type="button" class="modal-close" id="bcsModalClose">✕</button>
+      </div>
+      <div class="modal-body" id="bcsModalBody"></div>
     </div>
   </div>
 
@@ -774,6 +843,17 @@
   const dietDetailEl = document.getElementById('dietDetail');
 
   const BCS_LABELS = ['심각한 마름', '마름', '심각한 저체중', '저체중', '정상', '과체중', '심각한 과체중', '비만', '심각한 비만'];
+  const BCS_DESC = [
+    '갈비뼈·척추·골반이 두드러지게 보이고 만져짐, 체지방이 거의 없음',
+    '갈비뼈가 쉽게 만져지고 살짝 보임, 근육량이 감소한 상태',
+    '갈비뼈가 최소한의 지방으로 덮여 만져짐, 위에서 보면 허리선 뚜렷',
+    '갈비뼈가 얇은 지방층 아래 쉽게 만져짐, 허리선과 배 접힘이 뚜렷',
+    '갈비뼈가 적당한 지방 아래 만져짐, 위에서 봤을 때 허리선이 균형있게 보임',
+    '갈비뼈가 지방층으로 잘 만져지지 않음, 허리선이 희미해짐',
+    '갈비뼈를 만지기 어려움, 허리선 거의 없고 옆구리·배가 처짐',
+    '갈비뼈가 두꺼운 지방으로 덮여 만져지지 않음, 배가 확연히 처짐',
+    '가슴·등·목에 지방 축적이 뚜렷, 배가 크게 늘어져 걷기 불편할 정도',
+  ];
   let selectedBcs = 5;
 
   function catSvg(score, selected) {
@@ -871,6 +951,40 @@
       간식을 포함하여 하루에 <strong>${calories}kcal</strong>를 급여하고
       <strong>${water}ml</strong>의 음수량을 채워주세요 💧`;
   }
+
+  // ── BCS 가이드 팝업 ──
+  const bcsGuideBtn = document.getElementById('bcsGuideBtn');
+  const bcsModal = document.getElementById('bcsModal');
+  const bcsModalClose = document.getElementById('bcsModalClose');
+  const bcsModalBody = document.getElementById('bcsModalBody');
+
+  function renderBcsModal() {
+    let html = '';
+    for (let s = 1; s <= 9; s++) {
+      html += `
+        <div class="bcs-row${s === 5 ? ' ideal' : ''}">
+          <div class="bcs-row-cat">${catSvg(s, s === 5)}</div>
+          <div class="bcs-row-txt">
+            <div class="bcs-row-title"><b>${s}</b>${BCS_LABELS[s - 1]}${s === 5 ? ' (이상적)' : ''}</div>
+            <div class="bcs-row-desc">${BCS_DESC[s - 1]}</div>
+          </div>
+        </div>`;
+    }
+    bcsModalBody.innerHTML = html;
+  }
+
+  function openBcsModal() {
+    renderBcsModal();
+    bcsModal.classList.add('open');
+  }
+  function closeBcsModal() {
+    bcsModal.classList.remove('open');
+  }
+
+  bcsGuideBtn.addEventListener('click', openBcsModal);
+  bcsModalClose.addEventListener('click', closeBcsModal);
+  bcsModal.addEventListener('click', (e) => { if (e.target === bcsModal) closeBcsModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeBcsModal(); });
 
   renderBcsVisual();
   petNameEl.addEventListener('input', calcDiet);
