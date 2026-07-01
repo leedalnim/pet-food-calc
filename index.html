@@ -93,6 +93,27 @@
     border-color: var(--accent);
     background: #fff;
   }
+  input::placeholder { color: #C2B7A6; }
+  input[type="text"]:not(:placeholder-shown),
+  input[type="number"]:not(:placeholder-shown) {
+    background: #fff;
+    border-color: #CBBFAC;
+    color: var(--ink);
+    font-weight: 700;
+  }
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+  select,
+  .combo-input {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238B8378' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    padding-right: 34px;
+  }
   .input-unit {
     position: relative;
   }
@@ -289,14 +310,24 @@
     border-radius: 10px;
   }
   .bcs-cat:hover { background: #F5F0E8; }
-  .bcs-cat svg { width: 100%; height: 34px; }
+  .bcs-cat svg { width: 100%; height: 46px; }
   .bcs-cat .n {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: 700;
     color: var(--sub);
     margin-top: 2px;
   }
   .bcs-cat.selected .n { color: var(--accent); }
+  .bcs-caption {
+    text-align: center;
+    margin-top: 12px;
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--ink);
+  }
+  .bcs-caption .n { color: var(--accent); }
+  .bcs-caption.warn { color: var(--rose); }
+  .bcs-caption.warn .n { color: var(--rose); }
   .target-highlight {
     margin-top: 14px;
     padding: 16px;
@@ -365,11 +396,13 @@
       <div class="row">
         <div class="field">
           <label for="category">카테고리</label>
-          <select id="category"></select>
+          <input class="combo-input" list="categoryList" id="category" placeholder="카테고리 선택" autocomplete="off" />
+          <datalist id="categoryList"></datalist>
         </div>
         <div class="field">
           <label for="product">제품명</label>
-          <select id="product"></select>
+          <input class="combo-input" list="productList" id="product" placeholder="제품명 검색" autocomplete="off" />
+          <datalist id="productList"></datalist>
         </div>
       </div>
       <div class="row">
@@ -432,7 +465,7 @@
 
       <div class="field compare-lookup">
         <label for="compareProduct">다른 제품 최저가 검색해서 보기</label>
-        <input list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
+        <input class="combo-input" list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
         <datalist id="compareProductList"></datalist>
       </div>
       <div class="compare-item compare-result" id="compareResult"></div>
@@ -459,22 +492,7 @@
 
       <label style="display:block; margin-top:14px;">신체상태점수(BCS) 선택</label>
       <div class="bcs-visual" id="bcsVisual"></div>
-
-      <div class="row" style="margin-top:10px;">
-        <div class="field">
-          <select id="petBcs">
-            <option value="1">1 · 심각한 마름</option>
-            <option value="2">2 · 마름</option>
-            <option value="3">3 · 심각한 저체중</option>
-            <option value="4">4 · 저체중</option>
-            <option value="5" selected>5 · 정상</option>
-            <option value="6">6 · 과체중</option>
-            <option value="7">7 · 심각한 과체중</option>
-            <option value="8">8 · 비만</option>
-            <option value="9">9 · 심각한 비만</option>
-          </select>
-        </div>
-      </div>
+      <div class="bcs-caption" id="bcsCaption"></div>
 
       <details class="bcs-guide">
         <summary>BCS 점수 가이드 자세히 보기</summary>
@@ -506,7 +524,9 @@
   const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxDJpxX8AZX48dpoBbFmR8UlU2NN0tVuMooRgntJMkqvIj1Bko_1CwnFwffv-7fRteK/exec';
 
   const categoryEl = document.getElementById('category');
+  const categoryListEl = document.getElementById('categoryList');
   const productEl = document.getElementById('product');
+  const productListEl = document.getElementById('productList');
   const weightEl = document.getElementById('weight');
   const qtyEl = document.getElementById('qty');
   const priceEl = document.getElementById('price');
@@ -543,17 +563,27 @@
     return q > 0 ? q : 1;
   }
 
+  function isValid(value, list) {
+    return !!value && list.includes(value);
+  }
+
   async function loadMeta() {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=meta`);
     meta = await res.json();
-    categoryEl.innerHTML = meta.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    categoryListEl.innerHTML = meta.categories.map(c => `<option value="${c}"></option>`).join('');
+    if (!isValid(categoryEl.value, meta.categories)) {
+      categoryEl.value = meta.categories[0] || '';
+    }
     fillProducts();
   }
 
   function fillProducts() {
     const cat = categoryEl.value;
     const products = meta.productsByCategory[cat] || [];
-    productEl.innerHTML = products.map(p => `<option value="${p}">${p}</option>`).join('');
+    productListEl.innerHTML = products.map(p => `<option value="${p}"></option>`).join('');
+    if (!isValid(productEl.value, products)) {
+      productEl.value = products[0] || '';
+    }
   }
 
   function updateUnitPrice() {
@@ -647,7 +677,8 @@
   async function runCompare() {
     const category = categoryEl.value;
     const product = productEl.value;
-    if (!category || !product) return;
+    if (!isValid(category, meta.categories)) return;
+    if (!isValid(product, meta.productsByCategory[category] || [])) return;
     const w = parseFloat(weightEl.value) || 0;
     const p = parseFloat(priceEl.value) || 0;
     const qty = getQty();
@@ -673,7 +704,9 @@
     const w = parseFloat(weightEl.value);
     const p = parseFloat(priceEl.value);
     const qty = getQty();
-    if (!category || !product || !w || !p) return;
+    if (!isValid(category, meta.categories)) return;
+    if (!isValid(product, meta.productsByCategory[category] || [])) return;
+    if (!w || !p) return;
 
     const perUnitPrice = Math.round(p / qty);
 
@@ -702,8 +735,13 @@
     }
   }
 
-  categoryEl.addEventListener('change', () => { fillProducts(); scheduleCompare(); });
-  productEl.addEventListener('change', scheduleCompare);
+  categoryEl.addEventListener('input', () => {
+    if (isValid(categoryEl.value, meta.categories)) { fillProducts(); scheduleCompare(); }
+  });
+  productEl.addEventListener('input', () => {
+    const products = meta.productsByCategory[categoryEl.value] || [];
+    if (isValid(productEl.value, products)) scheduleCompare();
+  });
   weightEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
   qtyEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
   priceEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
@@ -715,8 +753,8 @@
   // ── 적정 체중 계산기 ──
   const petNameEl = document.getElementById('petName');
   const petWeightEl = document.getElementById('petWeight');
-  const petBcsEl = document.getElementById('petBcs');
   const bcsVisualEl = document.getElementById('bcsVisual');
+  const bcsCaptionEl = document.getElementById('bcsCaption');
   const targetHighlightEl = document.getElementById('targetHighlight');
   const targetLabelEl = document.getElementById('targetLabel');
   const targetValueEl = document.getElementById('targetValue');
@@ -724,47 +762,53 @@
   const dietDetailEl = document.getElementById('dietDetail');
 
   const BCS_LABELS = ['심각한 마름', '마름', '심각한 저체중', '저체중', '정상', '과체중', '심각한 과체중', '비만', '심각한 비만'];
+  let selectedBcs = 5;
 
   function catSvg(score, selected) {
     const t = (score - 1) / 8;
-    const fill = selected ? '#FF7A52' : '#D8CDBE';
-    const stroke = selected ? '#E85F32' : '#B8AC98';
-    const bellyDip = 34 + t * 16;
+    const fill = selected ? '#FF7A52' : '#DED2C0';
+    const stroke = selected ? '#E85F32' : '#AFA18C';
+    const bellyDip = 34 + t * 17;
     const chestX = 70 + t * 6;
     return `
     <svg viewBox="0 0 100 55" xmlns="http://www.w3.org/2000/svg">
+      <path d="M8,26 C1,20 1,9 10,6" stroke="${stroke}" stroke-width="2.6" fill="none" stroke-linecap="round"/>
       <path d="M10,28
-        C4,14 16,${(6 - t * 2).toFixed(1)} 28,8
+        C4,14 16,6 28,8
         C42,2 60,2 70,${(6 + t * 2).toFixed(1)}
-        C${(chestX + 14).toFixed(1)},${(8 + t * 2).toFixed(1)} ${(chestX + 18).toFixed(1)},14 ${(chestX + 16).toFixed(1)},20
-        C${(chestX + 18).toFixed(1)},26 ${(chestX + 14).toFixed(1)},32 ${(chestX + 8).toFixed(1)},36
+        C${(chestX + 14).toFixed(1)},${(8 + t * 2).toFixed(1)} ${(chestX + 19).toFixed(1)},14 ${(chestX + 17).toFixed(1)},20
+        C${(chestX + 19).toFixed(1)},26 ${(chestX + 14).toFixed(1)},32 ${(chestX + 8).toFixed(1)},36
         L${(chestX + 6).toFixed(1)},44
         C${(chestX - 10).toFixed(1)},${(bellyDip + 6).toFixed(1)} 40,${(bellyDip + 6).toFixed(1)} 24,${bellyDip.toFixed(1)}
         C14,${(bellyDip - 4).toFixed(1)} 8,${(bellyDip - 14).toFixed(1)} 10,28 Z"
-        fill="${fill}" stroke="${stroke}" stroke-width="1.6" stroke-linejoin="round"/>
-      <path d="M${(chestX + 2).toFixed(1)},10 L${(chestX - 2).toFixed(1)},2 L${(chestX + 8).toFixed(1)},7 Z"
-        fill="${fill}" stroke="${stroke}" stroke-width="1.2" stroke-linejoin="round"/>
-      <circle cx="${(chestX + 10).toFixed(1)}" cy="18" r="1.6" fill="#2E2A26"/>
-      <path d="M8,26 C1,20 1,10 9,7" stroke="${stroke}" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+        fill="${fill}" stroke="${stroke}" stroke-width="1.8" stroke-linejoin="round"/>
+      <path d="M${(chestX + 1).toFixed(1)},10 L${(chestX - 4).toFixed(1)},1 L${(chestX + 7).toFixed(1)},6.5 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.4" stroke-linejoin="round"/>
+      <path d="M${(chestX + 11).toFixed(1)},9 L${(chestX + 11).toFixed(1)},0.5 L${(chestX + 18).toFixed(1)},7 Z"
+        fill="${fill}" stroke="${stroke}" stroke-width="1.4" stroke-linejoin="round"/>
+      <circle cx="${(chestX + 11).toFixed(1)}" cy="19" r="1.8" fill="#2E2A26"/>
+      <path d="M${(chestX + 4).toFixed(1)},23 l-7,-1.5 M${(chestX + 4).toFixed(1)},25.5 l-7,1.5"
+        stroke="${stroke}" stroke-width="1" stroke-linecap="round"/>
     </svg>`;
   }
 
   function renderBcsVisual() {
-    const current = parseInt(petBcsEl.value, 10);
     bcsVisualEl.innerHTML = '';
     for (let s = 1; s <= 9; s++) {
       const btn = document.createElement('button');
       btn.type = 'button';
-      btn.className = 'bcs-cat' + (s === current ? ' selected' : '');
+      btn.className = 'bcs-cat' + (s === selectedBcs ? ' selected' : '');
       btn.title = `${s} · ${BCS_LABELS[s - 1]}`;
-      btn.innerHTML = `${catSvg(s, s === current)}<span class="n">${s}</span>`;
+      btn.innerHTML = `${catSvg(s, s === selectedBcs)}<span class="n">${s}</span>`;
       btn.addEventListener('click', () => {
-        petBcsEl.value = String(s);
+        selectedBcs = s;
         renderBcsVisual();
         calcDiet();
       });
       bcsVisualEl.appendChild(btn);
     }
+    bcsCaptionEl.classList.toggle('warn', selectedBcs <= 3 || selectedBcs >= 7);
+    bcsCaptionEl.innerHTML = `<span class="n">${selectedBcs}</span> · ${BCS_LABELS[selectedBcs - 1]}`;
   }
 
   function calcRER(weightKg) {
@@ -774,7 +818,7 @@
   function calcDiet() {
     const name = petNameEl.value.trim() || '반려동물';
     const weight = parseFloat(petWeightEl.value);
-    const bcs = parseInt(petBcsEl.value, 10);
+    const bcs = selectedBcs;
 
     if (!weight || weight <= 0) {
       targetHighlightEl.style.display = 'none';
@@ -819,7 +863,6 @@
   renderBcsVisual();
   petNameEl.addEventListener('input', calcDiet);
   petWeightEl.addEventListener('input', calcDiet);
-  petBcsEl.addEventListener('change', () => { renderBcsVisual(); calcDiet(); });
 </script>
 </body>
 </html>
