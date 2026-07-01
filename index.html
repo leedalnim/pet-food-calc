@@ -1,0 +1,486 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>🐾 사료 가격 계산기</title>
+<link rel="stylesheet" as="style" crossorigin
+  href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+<style>
+  :root {
+    --bg: #FBF6EF;
+    --card: #FFFFFF;
+    --ink: #2E2A26;
+    --sub: #8B8378;
+    --line: #EFE7DA;
+    --accent: #FF7A52;
+    --accent-soft: #FFE7DC;
+    --mint: #2FA98C;
+    --mint-soft: #E1F5EF;
+    --rose: #E8555A;
+    --rose-soft: #FDE6E6;
+    --radius: 20px;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    padding: 32px 16px 64px;
+  }
+  .app {
+    width: 100%;
+    max-width: 460px;
+  }
+  .hero {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  .hero .emoji { font-size: 34px; }
+  .hero h1 {
+    font-size: 20px;
+    margin: 6px 0 4px;
+    font-weight: 800;
+  }
+  .hero p {
+    margin: 0;
+    font-size: 13px;
+    color: var(--sub);
+  }
+  .card {
+    background: var(--card);
+    border-radius: var(--radius);
+    padding: 22px;
+    box-shadow: 0 8px 24px rgba(46, 42, 38, 0.06);
+    margin-bottom: 16px;
+  }
+  .row {
+    display: flex;
+    gap: 10px;
+  }
+  .row + .row { margin-top: 10px; }
+  .field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--sub);
+  }
+  select, input[type="number"] {
+    width: 100%;
+    padding: 12px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: #FCFAF6;
+    font-size: 15px;
+    font-family: inherit;
+    color: var(--ink);
+    appearance: none;
+    -webkit-appearance: none;
+  }
+  select:focus, input:focus {
+    outline: none;
+    border-color: var(--accent);
+    background: #fff;
+  }
+  .input-unit {
+    position: relative;
+  }
+  .input-unit input { padding-right: 40px; }
+  .input-unit span {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 13px;
+    color: var(--sub);
+  }
+  .unit-price {
+    margin-top: 18px;
+    text-align: center;
+    padding: 18px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--accent-soft), #FFF3EC);
+  }
+  .unit-price .label {
+    font-size: 12px;
+    color: var(--sub);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .unit-price .value {
+    font-size: 30px;
+    font-weight: 800;
+    color: var(--accent);
+  }
+  .unit-price .value span {
+    font-size: 15px;
+    font-weight: 600;
+    margin-left: 2px;
+  }
+  .badges {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 14px;
+  }
+  .badge {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 12px;
+    font-size: 13px;
+    font-weight: 600;
+  }
+  .badge.cheap { background: var(--mint-soft); color: var(--mint); }
+  .badge.expensive { background: var(--rose-soft); color: var(--rose); }
+  .badge.neutral { background: #F2F0EC; color: var(--sub); }
+  .badge strong { font-size: 15px; }
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 14px;
+  }
+  .stat-box {
+    border: 1.5px solid var(--line);
+    border-radius: 14px;
+    padding: 14px;
+  }
+  .stat-box .stat-label {
+    font-size: 12px;
+    color: var(--sub);
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+  .stat-box .stat-value {
+    font-size: 18px;
+    font-weight: 800;
+  }
+  .stat-box .stat-sub {
+    font-size: 12px;
+    color: var(--sub);
+    margin-top: 2px;
+  }
+  .section-title {
+    font-size: 14px;
+    font-weight: 800;
+    margin: 0 0 12px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .compare-list { display: flex; flex-direction: column; gap: 8px; }
+  .compare-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #FBFAF7;
+  }
+  .compare-item.me {
+    background: var(--accent-soft);
+    border: 1.5px solid var(--accent);
+  }
+  .compare-item .rank {
+    font-size: 12px;
+    font-weight: 800;
+    color: var(--sub);
+    width: 22px;
+  }
+  .compare-item .name {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 600;
+    margin-left: 4px;
+  }
+  .compare-item .price {
+    font-size: 13px;
+    font-weight: 800;
+  }
+  .save-btn {
+    width: 100%;
+    margin-top: 16px;
+    padding: 14px;
+    border: none;
+    border-radius: 14px;
+    background: var(--ink);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 700;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .save-btn:disabled { opacity: 0.4; cursor: default; }
+  .save-btn.saved { background: var(--mint); }
+  .empty-note {
+    font-size: 13px;
+    color: var(--sub);
+    text-align: center;
+    padding: 12px 0;
+  }
+  .footer-note {
+    text-align: center;
+    font-size: 11px;
+    color: var(--sub);
+    margin-top: 8px;
+  }
+  .toast {
+    font-size: 12px;
+    text-align: center;
+    color: var(--rose);
+    margin-top: 8px;
+    display: none;
+  }
+</style>
+</head>
+<body>
+  <div class="app">
+    <div class="hero">
+      <div class="emoji">🐾</div>
+      <h1>사료 가격 비교 계산기</h1>
+      <p>g당 단가로 언제나 최저가를 확인하세요</p>
+    </div>
+
+    <div class="card">
+      <div class="row">
+        <div class="field">
+          <label for="category">카테고리</label>
+          <select id="category"></select>
+        </div>
+        <div class="field">
+          <label for="product">제품명</label>
+          <select id="product"></select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field">
+          <label for="weight">무게</label>
+          <div class="input-unit">
+            <input type="number" id="weight" placeholder="85" min="0" />
+            <span>g</span>
+          </div>
+        </div>
+        <div class="field">
+          <label for="price">가격</label>
+          <div class="input-unit">
+            <input type="number" id="price" placeholder="2320" min="0" />
+            <span>원</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="unit-price">
+        <div class="label">계산된 단가</div>
+        <div class="value" id="unitPriceValue">- <span>원/g</span></div>
+      </div>
+
+      <div class="badges" id="badges"></div>
+      <button class="save-btn" id="saveBtn" disabled>이 구매 기록 저장하기</button>
+      <div class="toast" id="toast"></div>
+    </div>
+
+    <div class="card" id="statsCard" style="display:none;">
+      <div class="section-title">📊 이 제품의 역대 기록</div>
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-label">역대 최저가</div>
+          <div class="stat-value" id="minValue">-</div>
+          <div class="stat-sub" id="minSub"></div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">역대 평균가</div>
+          <div class="stat-value" id="avgValue">-</div>
+          <div class="stat-sub" id="avgSub"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="compareCard" style="display:none;">
+      <div class="section-title">🔍 같은 카테고리 다른 제품 최저가</div>
+      <div class="compare-list" id="compareList"></div>
+    </div>
+
+    <div class="footer-note">원본 구매 데이터는 비공개 스프레드시트에 안전하게 보관됩니다</div>
+  </div>
+
+<script>
+  // 배포한 Apps Script 웹앱 URL을 여기에 붙여넣으세요.
+  const APPS_SCRIPT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+
+  const categoryEl = document.getElementById('category');
+  const productEl = document.getElementById('product');
+  const weightEl = document.getElementById('weight');
+  const priceEl = document.getElementById('price');
+  const unitPriceValueEl = document.getElementById('unitPriceValue');
+  const badgesEl = document.getElementById('badges');
+  const saveBtn = document.getElementById('saveBtn');
+  const toastEl = document.getElementById('toast');
+  const statsCard = document.getElementById('statsCard');
+  const compareCard = document.getElementById('compareCard');
+  const minValue = document.getElementById('minValue');
+  const minSub = document.getElementById('minSub');
+  const avgValue = document.getElementById('avgValue');
+  const avgSub = document.getElementById('avgSub');
+  const compareList = document.getElementById('compareList');
+
+  let meta = { categories: [], productsByCategory: {} };
+  let compareTimer = null;
+
+  function won(n) {
+    return Math.round(n).toLocaleString('ko-KR');
+  }
+
+  function fmtPerGram(n) {
+    return n.toFixed(1) + '원/g';
+  }
+
+  async function loadMeta() {
+    const res = await fetch(`${APPS_SCRIPT_URL}?action=meta`);
+    meta = await res.json();
+    categoryEl.innerHTML = meta.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+    fillProducts();
+  }
+
+  function fillProducts() {
+    const cat = categoryEl.value;
+    const products = meta.productsByCategory[cat] || [];
+    productEl.innerHTML = products.map(p => `<option value="${p}">${p}</option>`).join('');
+  }
+
+  function updateUnitPrice() {
+    const w = parseFloat(weightEl.value);
+    const p = parseFloat(priceEl.value);
+    if (w > 0 && p > 0) {
+      const perGram = p / w;
+      unitPriceValueEl.innerHTML = `${fmtPerGram(perGram).replace('원/g', '')}<span>원/g</span>`;
+      saveBtn.disabled = false;
+    } else {
+      unitPriceValueEl.innerHTML = `-<span>원/g</span>`;
+      saveBtn.disabled = true;
+    }
+  }
+
+  function renderBadges(stats) {
+    badgesEl.innerHTML = '';
+    if (!stats) {
+      badgesEl.innerHTML = `<div class="badge neutral">아직 이 제품의 구매 기록이 없어요</div>`;
+      return;
+    }
+    [
+      { diff: stats.vsAvgDiff, label: '평균가' },
+      { diff: stats.vsMinDiff, label: '최저가' }
+    ].forEach(({ diff, label }) => {
+      if (diff === null) return;
+      const cheaper = diff < 0;
+      const cls = diff === 0 ? 'neutral' : cheaper ? 'cheap' : 'expensive';
+      const verb = diff === 0 ? '동일해요' : cheaper ? '저렴해요' : '비싸요';
+      const amount = Math.abs(diff).toFixed(1);
+      badgesEl.innerHTML += `
+        <div class="badge ${cls}">
+          <span>${label}보다</span>
+          <strong>g당 ${amount}원 ${verb}</strong>
+        </div>`;
+    });
+  }
+
+  function renderStats(stats, inputWeight) {
+    if (!stats) {
+      statsCard.style.display = 'none';
+      return;
+    }
+    statsCard.style.display = 'block';
+    const w = inputWeight > 0 ? inputWeight : 100;
+    minValue.textContent = fmtPerGram(stats.minPricePerGram);
+    minSub.textContent = `${w}g 환산 ${won(stats.minPricePerGram * w)}원`;
+    avgValue.textContent = fmtPerGram(stats.avgPricePerGram);
+    avgSub.textContent = `${w}g 환산 ${won(stats.avgPricePerGram * w)}원 · 총 ${stats.count}건`;
+  }
+
+  function renderCompareList(list, currentProduct) {
+    if (!list || list.length === 0) {
+      compareCard.style.display = 'none';
+      return;
+    }
+    compareCard.style.display = 'block';
+    compareList.innerHTML = list.map((item, i) => `
+      <div class="compare-item ${item.product === currentProduct ? 'me' : ''}">
+        <span class="rank">${i + 1}</span>
+        <span class="name">${item.product}</span>
+        <span class="price">${fmtPerGram(item.minPricePerGram)}</span>
+      </div>
+    `).join('');
+  }
+
+  async function runCompare() {
+    const category = categoryEl.value;
+    const product = productEl.value;
+    if (!category || !product) return;
+    const weight = parseFloat(weightEl.value) || 0;
+    const price = parseFloat(priceEl.value) || 0;
+
+    const params = new URLSearchParams({ action: 'compare', category, product, weight, price });
+    const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
+    const data = await res.json();
+
+    renderBadges(data.productStats);
+    renderStats(data.productStats, weight);
+    renderCompareList(data.categoryComparison, product);
+  }
+
+  function scheduleCompare() {
+    clearTimeout(compareTimer);
+    compareTimer = setTimeout(runCompare, 300);
+  }
+
+  async function saveRecord() {
+    const category = categoryEl.value;
+    const product = productEl.value;
+    const weightGrams = parseFloat(weightEl.value);
+    const price = parseFloat(priceEl.value);
+    if (!category || !product || !weightGrams || !price) return;
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = '저장 중...';
+    toastEl.style.display = 'none';
+
+    try {
+      const res = await fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams, price })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(data.error);
+
+      saveBtn.classList.add('saved');
+      saveBtn.textContent = '저장 완료 ✓';
+      await loadMeta();
+      await runCompare();
+    } catch (err) {
+      toastEl.textContent = '저장에 실패했어요. 잠시 후 다시 시도해주세요.';
+      toastEl.style.display = 'block';
+      saveBtn.textContent = '이 구매 기록 저장하기';
+      saveBtn.disabled = false;
+    }
+  }
+
+  categoryEl.addEventListener('change', () => { fillProducts(); scheduleCompare(); });
+  productEl.addEventListener('change', scheduleCompare);
+  weightEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
+  priceEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
+  saveBtn.addEventListener('click', saveRecord);
+
+  loadMeta();
+</script>
+</body>
+</html>
