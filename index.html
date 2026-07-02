@@ -531,7 +531,7 @@
           <label for="weight">개당 무게</label>
           <div class="input-unit">
             <input type="number" id="weight" placeholder="85" min="0" />
-            <span>g</span>
+            <span id="weightUnit">g</span>
           </div>
         </div>
         <div class="field narrow">
@@ -557,7 +557,7 @@
           <input type="text" id="note" placeholder="예: 유통기한 임박, 지마켓 쿠폰가" autocomplete="off" />
         </div>
       </div>
-      <div class="hint">24개들이 박스처럼 묶음으로 살 때는 수량을 입력하면 개당·g당 단가를 같이 계산해요</div>
+      <div class="hint">습식은 g, 건식·모래는 kg으로 입력하세요. 24개들이 박스처럼 묶음이면 수량을 입력하면 개당 단가도 같이 계산해요</div>
 
       <div class="unit-price">
         <div class="label">계산된 단가</div>
@@ -655,6 +655,7 @@
   const productEl = document.getElementById('product');
   const productListEl = document.getElementById('productList');
   const weightEl = document.getElementById('weight');
+  const weightUnitEl = document.getElementById('weightUnit');
   const qtyEl = document.getElementById('qty');
   const priceEl = document.getElementById('price');
   const noteEl = document.getElementById('note');
@@ -677,14 +678,22 @@
   let meta = { categories: [], productsByCategory: {} };
   let lastCategoryComparison = [];
   let compareOptions = [];
+  let compareUnit = catUnit('건식');
   let compareTimer = null;
 
   function won(n) {
     return Math.round(n).toLocaleString('ko-KR');
   }
 
-  function fmtPerGram(n) {
-    return n.toFixed(1) + '원/g';
+  // 카테고리별 단위: 습식은 g, 그 외(건식·모래)는 kg
+  function catUnit(category) {
+    return category === '습식'
+      ? { wLabel: 'g', toG: 1, pLabel: '원/g', pMul: 1, step: '1', ph: '85', defW: 100 }
+      : { wLabel: 'kg', toG: 1000, pLabel: '원/kg', pMul: 1000, step: '0.1', ph: '5', defW: 1 };
+  }
+
+  function fmtUnitPrice(perGram, u) {
+    return (perGram * u.pMul).toFixed(1) + u.pLabel;
   }
 
   function getQty() {
@@ -716,7 +725,7 @@
         .join('');
     }
 
-    function open() { render(input.value === current ? '' : input.value); comboEl.classList.add('open'); }
+    function open() { render(''); comboEl.classList.add('open'); }
     function close() { comboEl.classList.remove('open'); }
 
     input.addEventListener('focus', () => { open(); input.select(); });
@@ -750,7 +759,7 @@
 
   const categoryCombo = makeCombo('categoryCombo',
     () => meta.categories,
-    () => { fillProducts(); scheduleCompare(); });
+    () => { fillProducts(); updateWeightUnit(); scheduleCompare(); });
 
   const productCombo = makeCombo('productCombo',
     () => meta.productsByCategory[categoryCombo.value] || [],
@@ -763,6 +772,7 @@
       categoryCombo.set(meta.categories[0] || '', true);
     }
     fillProducts();
+    updateWeightUnit();
   }
 
   function fillProducts() {
@@ -772,24 +782,35 @@
     }
   }
 
+  function updateWeightUnit() {
+    const u = catUnit(categoryCombo.value);
+    weightUnitEl.textContent = u.wLabel;
+    weightEl.step = u.step;
+    weightEl.placeholder = u.ph;
+    updateUnitPrice();
+  }
+
   function updateUnitPrice() {
+    const u = catUnit(categoryCombo.value);
     const w = parseFloat(weightEl.value);
     const p = parseFloat(priceEl.value);
     const qty = getQty();
     if (w > 0 && p > 0) {
-      const totalWeight = w * qty;
-      const perGram = p / totalWeight;
-      unitPriceValueEl.innerHTML = `${perGram.toFixed(1)}<span>원/g</span>`;
-      unitPriceSubEl.textContent = qty > 1 ? `개당 ${won(p / qty)}원 · 총 ${totalWeight.toLocaleString('ko-KR')}g` : '';
+      const totalNative = w * qty;
+      const perNative = p / totalNative;
+      unitPriceValueEl.innerHTML = `${perNative.toFixed(1)}<span>${u.pLabel}</span>`;
+      unitPriceSubEl.textContent = qty > 1
+        ? `개당 ${won(p / qty)}원 · 총 ${totalNative.toLocaleString('ko-KR')}${u.wLabel}`
+        : '';
       saveBtn.disabled = false;
     } else {
-      unitPriceValueEl.innerHTML = `-<span>원/g</span>`;
+      unitPriceValueEl.innerHTML = `-<span>${u.pLabel}</span>`;
       unitPriceSubEl.textContent = '';
       saveBtn.disabled = true;
     }
   }
 
-  function renderBadges(stats) {
+  function renderBadges(stats, u) {
     badgesEl.innerHTML = '';
     if (!stats) {
       badgesEl.innerHTML = `<div class="badge neutral">아직 이 제품의 구매 기록이 없어요</div>`;
@@ -803,30 +824,32 @@
       const cheaper = diff < 0;
       const cls = diff === 0 ? 'neutral' : cheaper ? 'cheap' : 'expensive';
       const verb = diff === 0 ? '동일해요' : cheaper ? '저렴해요' : '비싸요';
-      const amount = Math.abs(diff).toFixed(1);
+      const amount = (Math.abs(diff) * u.pMul).toFixed(1);
       badgesEl.innerHTML += `
         <div class="badge ${cls}">
           <span>${label}보다</span>
-          <strong>g당 ${amount}원 ${verb}</strong>
+          <strong>${u.wLabel}당 ${amount}원 ${verb}</strong>
         </div>`;
     });
   }
 
-  function renderStats(stats, inputWeight) {
+  function renderStats(stats, u, nativeWeight) {
     if (!stats) {
       statsCard.style.display = 'none';
       return;
     }
     statsCard.style.display = 'block';
-    const w = inputWeight > 0 ? inputWeight : 100;
-    minValue.textContent = fmtPerGram(stats.minPricePerGram);
-    minSub.textContent = `${w}g 환산 ${won(stats.minPricePerGram * w)}원`;
-    avgValue.textContent = fmtPerGram(stats.avgPricePerGram);
-    avgSub.textContent = `${w}g 환산 ${won(stats.avgPricePerGram * w)}원 · 총 ${stats.count}건`;
+    const w = nativeWeight > 0 ? nativeWeight : u.defW;
+    const grams = w * u.toG;
+    minValue.textContent = fmtUnitPrice(stats.minPricePerGram, u);
+    minSub.textContent = `${w.toLocaleString('ko-KR')}${u.wLabel} 환산 ${won(stats.minPricePerGram * grams)}원`;
+    avgValue.textContent = fmtUnitPrice(stats.avgPricePerGram, u);
+    avgSub.textContent = `${w.toLocaleString('ko-KR')}${u.wLabel} 환산 ${won(stats.avgPricePerGram * grams)}원 · 총 ${stats.count}건`;
   }
 
-  function renderCompare(list, currentProduct) {
+  function renderCompare(list, currentProduct, u) {
     lastCategoryComparison = list || [];
+    compareUnit = u;
     if (!lastCategoryComparison.length) {
       compareCard.style.display = 'none';
       return;
@@ -837,7 +860,7 @@
     compareBestEl.innerHTML = `
       <span class="rank">1위</span>
       <span class="name">${best.product}${best.product === currentProduct ? ' (현재 제품)' : ''}</span>
-      <span class="price">${fmtPerGram(best.minPricePerGram)}</span>`;
+      <span class="price">${fmtUnitPrice(best.minPricePerGram, u)}</span>`;
 
     compareOptions = lastCategoryComparison
       .filter(item => item.product !== currentProduct)
@@ -857,7 +880,7 @@
     compareResultEl.innerHTML = `
       <span class="rank">${rank}위</span>
       <span class="name">${match.product}</span>
-      <span class="price">${fmtPerGram(match.minPricePerGram)}</span>`;
+      <span class="price">${fmtUnitPrice(match.minPricePerGram, compareUnit)}</span>`;
   }
 
   async function runCompare() {
@@ -865,18 +888,20 @@
     const product = productCombo.value;
     if (!isValid(category, meta.categories)) return;
     if (!isValid(product, meta.productsByCategory[category] || [])) return;
+    const u = catUnit(category);
     const w = parseFloat(weightEl.value) || 0;
     const p = parseFloat(priceEl.value) || 0;
     const qty = getQty();
-    const totalWeight = w * qty;
+    const totalNative = w * qty;
+    const totalGrams = totalNative * u.toG;
 
-    const params = new URLSearchParams({ action: 'compare', category, product, weight: totalWeight, price: p });
+    const params = new URLSearchParams({ action: 'compare', category, product, weight: totalGrams, price: p });
     const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await res.json();
 
-    renderBadges(data.productStats);
-    renderStats(data.productStats, totalWeight);
-    renderCompare(data.categoryComparison, product);
+    renderBadges(data.productStats, u);
+    renderStats(data.productStats, u, totalNative);
+    renderCompare(data.categoryComparison, product, u);
   }
 
   function scheduleCompare() {
@@ -895,6 +920,8 @@
     if (!isValid(product, meta.productsByCategory[category] || [])) return;
     if (!w || !p) return;
 
+    const u = catUnit(category);
+    const weightGrams = w * u.toG;
     const perUnitPrice = Math.round(p / qty);
 
     saveBtn.disabled = true;
@@ -905,7 +932,7 @@
       const res = await fetch(APPS_SCRIPT_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams: w, price: perUnitPrice, note })
+        body: JSON.stringify({ action: 'addRecord', category, product, weightGrams, price: perUnitPrice, note })
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error);
