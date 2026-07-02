@@ -108,12 +108,49 @@
     margin: 0;
   }
   input[type="number"] { -moz-appearance: textfield; }
-  select,
-  .combo-input {
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%238B8378' stroke-width='1.6' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 14px center;
-    padding-right: 34px;
+  input[type="text"]::-webkit-calendar-picker-indicator { display: none !important; }
+  .combo { position: relative; }
+  .combo .combo-field { padding-right: 36px; cursor: pointer; }
+  .combo-arrow {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 12px;
+    height: 8px;
+    pointer-events: none;
+    transition: transform 0.15s;
+  }
+  .combo.open .combo-arrow { transform: translateY(-50%) rotate(180deg); }
+  .combo-list {
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1px solid #E7DECE;
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(46, 42, 38, 0.14);
+    max-height: 230px;
+    overflow-y: auto;
+    z-index: 40;
+    display: none;
+    padding: 4px;
+  }
+  .combo.open .combo-list { display: block; }
+  .combo-opt {
+    padding: 10px 12px;
+    font-size: 14px;
+    border-radius: 8px;
+    cursor: pointer;
+  }
+  .combo-opt:hover, .combo-opt.active { background: var(--accent-soft); }
+  .combo-opt.selected { color: var(--accent); font-weight: 700; }
+  .combo-empty {
+    padding: 12px;
+    font-size: 13px;
+    color: var(--sub);
+    text-align: center;
   }
   .input-unit {
     position: relative;
@@ -474,13 +511,19 @@
       <div class="row">
         <div class="field">
           <label for="category">카테고리</label>
-          <input type="text" class="combo-input" list="categoryList" id="category" placeholder="카테고리 선택" autocomplete="off" />
-          <datalist id="categoryList"></datalist>
+          <div class="combo" id="categoryCombo">
+            <input type="text" class="combo-field" id="category" placeholder="카테고리 선택" autocomplete="off" />
+            <svg class="combo-arrow" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="#8B8378" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="combo-list" id="categoryList"></div>
+          </div>
         </div>
         <div class="field">
           <label for="product">제품명</label>
-          <input type="text" class="combo-input" list="productList" id="product" placeholder="제품명 검색" autocomplete="off" />
-          <datalist id="productList"></datalist>
+          <div class="combo" id="productCombo">
+            <input type="text" class="combo-field" id="product" placeholder="제품명 검색" autocomplete="off" />
+            <svg class="combo-arrow" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="#8B8378" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            <div class="combo-list" id="productList"></div>
+          </div>
         </div>
       </div>
       <div class="row">
@@ -549,8 +592,11 @@
 
       <div class="field compare-lookup">
         <label for="compareProduct">다른 제품 최저가 검색해서 보기</label>
-        <input type="text" class="combo-input" list="compareProductList" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
-        <datalist id="compareProductList"></datalist>
+        <div class="combo" id="compareProductCombo">
+          <input type="text" class="combo-field" id="compareProduct" placeholder="제품명을 입력하세요" autocomplete="off" />
+          <svg class="combo-arrow" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="#8B8378" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          <div class="combo-list" id="compareProductList"></div>
+        </div>
       </div>
       <div class="compare-item compare-result" id="compareResult"></div>
     </div>
@@ -630,6 +676,7 @@
 
   let meta = { categories: [], productsByCategory: {} };
   let lastCategoryComparison = [];
+  let compareOptions = [];
   let compareTimer = null;
 
   function won(n) {
@@ -649,28 +696,79 @@
     return !!value && list.includes(value);
   }
 
-  const EXCLUDED_CATEGORIES = ['카사바', '벤토'];
+  // 검색 가능한 커스텀 드롭다운
+  function makeCombo(comboId, getOptions, onChange) {
+    const comboEl = document.getElementById(comboId);
+    const input = comboEl.querySelector('.combo-field');
+    const listEl = comboEl.querySelector('.combo-list');
+    let current = '';
+
+    function render(filter) {
+      const opts = getOptions();
+      const f = (filter || '').trim().toLowerCase();
+      const filtered = f ? opts.filter(o => o.toLowerCase().includes(f)) : opts;
+      if (!filtered.length) {
+        listEl.innerHTML = `<div class="combo-empty">검색 결과가 없어요</div>`;
+        return;
+      }
+      listEl.innerHTML = filtered
+        .map(o => `<div class="combo-opt${o === current ? ' selected' : ''}" data-val="${o.replace(/"/g, '&quot;')}">${o}</div>`)
+        .join('');
+    }
+
+    function open() { render(input.value === current ? '' : input.value); comboEl.classList.add('open'); }
+    function close() { comboEl.classList.remove('open'); }
+
+    input.addEventListener('focus', () => { open(); input.select(); });
+    input.addEventListener('click', () => open());
+    input.addEventListener('input', () => { comboEl.classList.add('open'); render(input.value); });
+    listEl.addEventListener('mousedown', (e) => {
+      const opt = e.target.closest('.combo-opt');
+      if (!opt) return;
+      e.preventDefault();
+      current = opt.dataset.val;
+      input.value = current;
+      close();
+      if (onChange) onChange(current);
+    });
+    input.addEventListener('blur', () => {
+      setTimeout(() => {
+        if (input.value !== current) input.value = current; // 유효값으로 복원
+        close();
+      }, 150);
+    });
+
+    return {
+      get value() { return current; },
+      set(val, silent) {
+        current = val || '';
+        input.value = current;
+        if (!silent && onChange) onChange(current);
+      }
+    };
+  }
+
+  const categoryCombo = makeCombo('categoryCombo',
+    () => meta.categories,
+    () => { fillProducts(); scheduleCompare(); });
+
+  const productCombo = makeCombo('productCombo',
+    () => meta.productsByCategory[categoryCombo.value] || [],
+    () => scheduleCompare());
 
   async function loadMeta() {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=meta`);
-    const raw = await res.json();
-    meta = {
-      categories: raw.categories.filter(c => !EXCLUDED_CATEGORIES.includes(c)),
-      productsByCategory: raw.productsByCategory
-    };
-    categoryListEl.innerHTML = meta.categories.map(c => `<option value="${c}"></option>`).join('');
-    if (!isValid(categoryEl.value, meta.categories)) {
-      categoryEl.value = meta.categories[0] || '';
+    meta = await res.json();
+    if (!isValid(categoryCombo.value, meta.categories)) {
+      categoryCombo.set(meta.categories[0] || '', true);
     }
     fillProducts();
   }
 
   function fillProducts() {
-    const cat = categoryEl.value;
-    const products = meta.productsByCategory[cat] || [];
-    productListEl.innerHTML = products.map(p => `<option value="${p}"></option>`).join('');
-    if (!isValid(productEl.value, products)) {
-      productEl.value = products[0] || '';
+    const products = meta.productsByCategory[categoryCombo.value] || [];
+    if (!isValid(productCombo.value, products)) {
+      productCombo.set(products[0] || '', true);
     }
   }
 
@@ -741,14 +839,14 @@
       <span class="name">${best.product}${best.product === currentProduct ? ' (현재 제품)' : ''}</span>
       <span class="price">${fmtPerGram(best.minPricePerGram)}</span>`;
 
-    const others = lastCategoryComparison.filter(item => item.product !== currentProduct);
-    compareProductListEl.innerHTML = others.map(item => `<option value="${item.product}"></option>`).join('');
-    compareProductEl.value = '';
+    compareOptions = lastCategoryComparison
+      .filter(item => item.product !== currentProduct)
+      .map(item => item.product);
+    compareProductCombo.set('', true);
     compareResultEl.style.display = 'none';
   }
 
-  function showCompareResult() {
-    const query = compareProductEl.value.trim();
+  function showCompareResult(query) {
     const match = lastCategoryComparison.find(item => item.product === query);
     if (!match) {
       compareResultEl.style.display = 'none';
@@ -763,8 +861,8 @@
   }
 
   async function runCompare() {
-    const category = categoryEl.value;
-    const product = productEl.value;
+    const category = categoryCombo.value;
+    const product = productCombo.value;
     if (!isValid(category, meta.categories)) return;
     if (!isValid(product, meta.productsByCategory[category] || [])) return;
     const w = parseFloat(weightEl.value) || 0;
@@ -787,8 +885,8 @@
   }
 
   async function saveRecord() {
-    const category = categoryEl.value;
-    const product = productEl.value;
+    const category = categoryCombo.value;
+    const product = productCombo.value;
     const w = parseFloat(weightEl.value);
     const p = parseFloat(priceEl.value);
     const qty = getQty();
@@ -825,17 +923,13 @@
     }
   }
 
-  categoryEl.addEventListener('input', () => {
-    if (isValid(categoryEl.value, meta.categories)) { fillProducts(); scheduleCompare(); }
-  });
-  productEl.addEventListener('input', () => {
-    const products = meta.productsByCategory[categoryEl.value] || [];
-    if (isValid(productEl.value, products)) scheduleCompare();
-  });
+  const compareProductCombo = makeCombo('compareProductCombo',
+    () => compareOptions,
+    (val) => showCompareResult(val));
+
   weightEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
   qtyEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
   priceEl.addEventListener('input', () => { updateUnitPrice(); scheduleCompare(); });
-  compareProductEl.addEventListener('input', showCompareResult);
   saveBtn.addEventListener('click', saveRecord);
 
   loadMeta();
