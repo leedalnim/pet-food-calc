@@ -236,6 +236,7 @@
     border-radius: 14px;
     padding: 14px;
   }
+  .stat-box.full { grid-column: 1 / -1; }
   .stat-box .stat-label {
     font-size: 12px;
     color: var(--sub);
@@ -591,6 +592,11 @@
           <div class="stat-value" id="avgValue">-</div>
           <div class="stat-sub" id="avgSub"></div>
         </div>
+        <div class="stat-box full" id="lastBox">
+          <div class="stat-label">마지막 구매</div>
+          <div class="stat-value" id="lastValue">-</div>
+          <div class="stat-sub" id="lastSub"></div>
+        </div>
       </div>
     </div>
 
@@ -678,6 +684,9 @@
   const minSub = document.getElementById('minSub');
   const avgValue = document.getElementById('avgValue');
   const avgSub = document.getElementById('avgSub');
+  const lastBox = document.getElementById('lastBox');
+  const lastValue = document.getElementById('lastValue');
+  const lastSub = document.getElementById('lastSub');
   const compareBestEl = document.getElementById('compareBest');
   const compareProductEl = document.getElementById('compareProduct');
   const compareProductListEl = document.getElementById('compareProductList');
@@ -859,6 +868,20 @@
     minSub.textContent = `${w.toLocaleString('ko-KR')}${u.wLabel} 환산 ${won(stats.minPricePerGram * grams)}원`;
     avgValue.textContent = fmtUnitPrice(stats.avgPricePerGram, u);
     avgSub.textContent = `${w.toLocaleString('ko-KR')}${u.wLabel} 환산 ${won(stats.avgPricePerGram * grams)}원 · 총 ${stats.count}건`;
+
+    const last = stats.lastRecord;
+    if (last && last.price) {
+      lastBox.style.display = 'block';
+      lastValue.textContent = `${won(last.price)}원`;
+      const perGram = last.pricePerGram != null ? last.pricePerGram
+        : (last.weightGrams > 0 ? last.price / last.weightGrams : null);
+      const parts = [];
+      if (perGram != null) parts.push(fmtUnitPrice(perGram, u));
+      if (last.date) parts.push(last.date);
+      lastSub.textContent = parts.join(' · ');
+    } else {
+      lastBox.style.display = 'none';
+    }
   }
 
   function renderCompare(list, currentProduct, u) {

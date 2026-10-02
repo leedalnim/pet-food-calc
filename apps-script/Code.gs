@@ -128,11 +128,13 @@ function getComparison_(category, product, weightInputGrams, priceInput) {
       if (r.pricePerGram < min.pricePerGram) min = r;
     });
     var avgPricePerGram = sum / productRows.length;
+    var lastRec = productRows[productRows.length - 1];
     result.productStats = {
       count: productRows.length,
       avgPricePerGram: avgPricePerGram,
       minPricePerGram: min.pricePerGram,
       minRecord: { price: min.price, weightGrams: min.weightGrams, date: min.date },
+      lastRecord: { price: lastRec.price, weightGrams: lastRec.weightGrams, pricePerGram: lastRec.pricePerGram, date: lastRec.date },
       vsAvgDiff: inputPricePerGram !== null ? inputPricePerGram - avgPricePerGram : null,
       vsMinDiff: inputPricePerGram !== null ? inputPricePerGram - min.pricePerGram : null
     };
