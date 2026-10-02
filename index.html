@@ -688,6 +688,7 @@
   let compareOptions = [];
   let compareUnit = catUnit('건식');
   let compareTimer = null;
+  let compareSeq = 0;
 
   function won(n) {
     return Math.round(n).toLocaleString('ko-KR');
@@ -818,20 +819,25 @@
     }
   }
 
-  function renderBadges(stats, u) {
+  function renderBadges(stats, u, inputPerGramG) {
     badgesEl.innerHTML = '';
     if (!stats) {
       badgesEl.innerHTML = `<div class="badge neutral">아직 이 제품의 구매 기록이 없어요</div>`;
       return;
     }
+    if (inputPerGramG === null) {
+      badgesEl.innerHTML = `<div class="badge neutral">무게·가격을 입력하면 역대가와 비교해드려요</div>`;
+      return;
+    }
     [
-      { diff: stats.vsAvgDiff, label: '평균가' },
-      { diff: stats.vsMinDiff, label: '최저가' }
-    ].forEach(({ diff, label }) => {
-      if (diff === null) return;
+      { base: stats.avgPricePerGram, label: '평균가' },
+      { base: stats.minPricePerGram, label: '최저가' }
+    ].forEach(({ base, label }) => {
+      if (base === null || base === undefined) return;
+      const diff = inputPerGramG - base;
       const cheaper = diff < 0;
-      const cls = diff === 0 ? 'neutral' : cheaper ? 'cheap' : 'expensive';
-      const verb = diff === 0 ? '동일해요' : cheaper ? '저렴해요' : '비싸요';
+      const cls = Math.abs(diff) < 0.05 ? 'neutral' : cheaper ? 'cheap' : 'expensive';
+      const verb = Math.abs(diff) < 0.05 ? '동일해요' : cheaper ? '저렴해요' : '비싸요';
       const amount = (Math.abs(diff) * u.pMul).toFixed(1);
       badgesEl.innerHTML += `
         <div class="badge ${cls}">
@@ -902,12 +908,15 @@
     const qty = getQty();
     const totalNative = w * qty;
     const totalGrams = totalNative * u.toG;
+    const inputPerGramG = (totalGrams > 0 && p > 0) ? p / totalGrams : null;
 
     const params = new URLSearchParams({ action: 'compare', category, product, weight: totalGrams, price: p });
+    const seq = ++compareSeq;
     const res = await fetch(`${APPS_SCRIPT_URL}?${params.toString()}`);
     const data = await res.json();
+    if (seq !== compareSeq) return; // 더 최신 요청이 있으면 오래된 응답은 무시
 
-    renderBadges(data.productStats, u);
+    renderBadges(data.productStats, u, inputPerGramG);
     renderStats(data.productStats, u, totalNative);
     renderCompare(data.categoryComparison, product, u);
   }
