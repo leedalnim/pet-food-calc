@@ -36,6 +36,16 @@ function parseNumber_(raw) {
   return isNaN(n) ? 0 : n;
 }
 
+// 구매일 셀 값(Date 객체 또는 'yy.MM.dd' 같은 문자열)을 정렬용 타임스탬프로 변환. 해석 불가 시 null
+function parseDateMs_(raw) {
+  if (raw instanceof Date) return isNaN(raw.getTime()) ? null : raw.getTime();
+  var m = String(raw || '').match(/(\d{2,4})\s*[.\-\/]\s*(\d{1,2})\s*[.\-\/]\s*(\d{1,2})/);
+  if (!m) return null;
+  var y = Number(m[1]);
+  if (y < 100) y += 2000;
+  return new Date(y, Number(m[2]) - 1, Number(m[3])).getTime();
+}
+
 function readRows_() {
   var sheet = getSheet_();
   var lastRow = sheet.getLastRow();
@@ -51,9 +61,12 @@ function readRows_() {
     var price = parseNumber_(r[COLUMNS.PRICE]);
     if (!weightRaw || !price) continue;
     var weightGrams = toGrams_(weightRaw, category);
+    var dateRaw = r[COLUMNS.DATE];
+    var dateMs = parseDateMs_(dateRaw);
     rows.push({
       category: category,
-      date: r[COLUMNS.DATE] ? String(r[COLUMNS.DATE]) : '',
+      date: dateMs !== null ? formatDate_(new Date(dateMs)) : (dateRaw ? String(dateRaw) : ''),
+      dateMs: dateMs,
       product: product,
       weightGrams: weightGrams,
       price: price,
@@ -128,7 +141,14 @@ function getComparison_(category, product, weightInputGrams, priceInput) {
       if (r.pricePerGram < min.pricePerGram) min = r;
     });
     var avgPricePerGram = sum / productRows.length;
-    var lastRec = productRows[productRows.length - 1];
+    // 시트는 카테고리별로 행이 끼워 넣어지므로 행 순서가 아닌 구매일 기준으로 가장 최근 구매를 고른다.
+    // 같은 날짜면 아래쪽 행, 날짜가 없는 행은 날짜가 있는 행보다 뒤로 밀린다.
+    var lastRec = productRows[0];
+    productRows.forEach(function (r) {
+      var a = r.dateMs !== null ? r.dateMs : -Infinity;
+      var b = lastRec.dateMs !== null ? lastRec.dateMs : -Infinity;
+      if (a >= b) lastRec = r;
+    });
     result.productStats = {
       count: productRows.length,
       avgPricePerGram: avgPricePerGram,
