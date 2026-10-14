@@ -141,20 +141,25 @@ function getComparison_(category, product, weightInputGrams, priceInput) {
       if (r.pricePerGram < min.pricePerGram) min = r;
     });
     var avgPricePerGram = sum / productRows.length;
-    // 시트는 카테고리별로 행이 끼워 넣어지므로 행 순서가 아닌 구매일 기준으로 가장 최근 구매를 고른다.
-    // 같은 날짜면 아래쪽 행, 날짜가 없는 행은 날짜가 있는 행보다 뒤로 밀린다.
-    var lastRec = productRows[0];
-    productRows.forEach(function (r) {
-      var a = r.dateMs !== null ? r.dateMs : -Infinity;
-      var b = lastRec.dateMs !== null ? lastRec.dateMs : -Infinity;
-      if (a >= b) lastRec = r;
+    // 시트는 카테고리별로 행이 끼워 넣어지므로 행 순서가 아닌 구매일 기준으로 최근 구매를 정렬한다.
+    // 같은 날짜면 아래쪽 행이 먼저, 날짜가 없는 행은 맨 뒤로 밀린다.
+    var recentRows = productRows.map(function (r, i) { return { r: r, i: i }; });
+    recentRows.sort(function (a, b) {
+      var da = a.r.dateMs !== null ? a.r.dateMs : -Infinity;
+      var db = b.r.dateMs !== null ? b.r.dateMs : -Infinity;
+      if (da !== db) return db > da ? 1 : -1;
+      return b.i - a.i;
+    });
+    var recentRecords = recentRows.slice(0, 3).map(function (x) {
+      return { price: x.r.price, weightGrams: x.r.weightGrams, pricePerGram: x.r.pricePerGram, date: x.r.date };
     });
     result.productStats = {
       count: productRows.length,
       avgPricePerGram: avgPricePerGram,
       minPricePerGram: min.pricePerGram,
       minRecord: { price: min.price, weightGrams: min.weightGrams, date: min.date },
-      lastRecord: { price: lastRec.price, weightGrams: lastRec.weightGrams, pricePerGram: lastRec.pricePerGram, date: lastRec.date },
+      lastRecord: recentRecords[0],
+      recentRecords: recentRecords,
       vsAvgDiff: inputPricePerGram !== null ? inputPricePerGram - avgPricePerGram : null,
       vsMinDiff: inputPricePerGram !== null ? inputPricePerGram - min.pricePerGram : null
     };
