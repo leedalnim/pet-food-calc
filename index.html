@@ -2,7 +2,9 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-status-bar-style" content="default" />
+<meta name="theme-color" content="#FBF6EF" />
 <title>🐾 반려동물 계산기</title>
 <meta name="description" content="사료·모래 g당(kg당) 단가를 자동 계산하고 역대 최저가·평균가와 비교하는 반려동물 가격 계산기. 적정 체중 계산기 포함." />
 <meta property="og:type" content="website" />
@@ -30,18 +32,35 @@
     --radius: 20px;
   }
   * { box-sizing: border-box; }
+  /* 문서 자체는 스크롤하지 않는다. iOS 홈 화면 웹앱은 상태바 밑에 스크롤 영역이 있으면
+     그 자리에 흐림(리퀴드 글래스)을 덮으므로, 스크롤은 상태바 아래에서 시작하는 #root가 맡는다. */
+  html {
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+  }
   body {
     margin: 0;
+    height: 100%;
+    overflow: hidden;
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Malgun Gothic', sans-serif;
     background: var(--bg);
     color: var(--ink);
-    display: flex;
-    justify-content: center;
-    padding: 32px 16px 64px;
+  }
+  #root {
+    position: fixed;
+    top: env(safe-area-inset-top);
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 32px max(16px, env(safe-area-inset-right)) calc(64px + env(safe-area-inset-bottom)) max(16px, env(safe-area-inset-left));
   }
   .app {
     width: 100%;
     max-width: 460px;
+    margin: 0 auto;
   }
   .hero {
     text-align: center;
@@ -525,6 +544,7 @@
 </style>
 </head>
 <body>
+  <div id="root">
   <div class="app">
     <div class="hero">
       <div class="emoji">🐾</div>
@@ -663,6 +683,7 @@
         <div class="t-detail" id="dietDetail"></div>
       </div>
     </div>
+  </div>
   </div>
 
   <div class="modal-overlay" id="bcsModal">
