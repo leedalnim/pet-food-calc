@@ -154,6 +154,8 @@
   }
   .combo-opt:hover, .combo-opt.active { background: var(--accent-soft); }
   .combo-opt.selected { color: var(--accent); font-weight: 700; }
+  .combo-opt.new-opt { color: var(--accent); font-weight: 700; }
+  .combo-opt + .combo-opt.new-opt { border-top: 1px dashed var(--line); }
   .combo-empty {
     padding: 12px;
     font-size: 13px;
@@ -543,7 +545,7 @@
         <div class="field">
           <label for="product">제품명</label>
           <div class="combo" id="productCombo">
-            <input type="text" class="combo-field" id="product" placeholder="제품명 검색" autocomplete="off" />
+            <input type="text" class="combo-field" id="product" placeholder="제품명 검색 또는 새로 입력" autocomplete="off" />
             <svg class="combo-arrow" viewBox="0 0 12 8"><path d="M1 1l5 5 5-5" stroke="#8B8378" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
             <div class="combo-list" id="productList"></div>
           </div>
@@ -735,24 +737,50 @@
     return !!value && list.includes(value);
   }
 
+  function escapeHtml(str) {
+    return String(str).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  }
+
+  // 공백·대소문자만 다른 이름은 같은 제품으로 본다
+  function normName(str) {
+    return String(str || '').trim().replace(/\s+/g, ' ').toLowerCase();
+  }
+
   // 검색 가능한 커스텀 드롭다운
-  function makeCombo(comboId, getOptions, onChange) {
+  // allowNew: 목록에 없는 값을 직접 입력해 새 항목으로 쓸 수 있게 한다
+  function makeCombo(comboId, getOptions, onChange, allowNew) {
     const comboEl = document.getElementById(comboId);
     const input = comboEl.querySelector('.combo-field');
     const listEl = comboEl.querySelector('.combo-list');
     let current = '';
 
+    // 입력값이 기존 항목과 같으면 그 항목으로, 아니면 정리한 새 이름으로
+    function resolve(text) {
+      const t = String(text || '').trim().replace(/\s+/g, ' ');
+      if (!t) return '';
+      return getOptions().find(o => normName(o) === normName(t)) || t;
+    }
+
     function render(filter) {
       const opts = getOptions();
       const f = (filter || '').trim().toLowerCase();
       const filtered = f ? opts.filter(o => o.toLowerCase().includes(f)) : opts;
-      if (!filtered.length) {
-        listEl.innerHTML = `<div class="combo-empty">검색 결과가 없어요</div>`;
-        return;
-      }
-      listEl.innerHTML = filtered
-        .map(o => `<div class="combo-opt${o === current ? ' selected' : ''}" data-val="${o.replace(/"/g, '&quot;')}">${o}</div>`)
+      const typed = (filter || '').trim().replace(/\s+/g, ' ');
+      const showNew = allowNew && typed && !opts.some(o => normName(o) === normName(typed));
+      let html = filtered
+        .map(o => `<div class="combo-opt${o === current ? ' selected' : ''}" data-val="${escapeHtml(o)}">${escapeHtml(o)}</div>`)
         .join('');
+      if (showNew) {
+        html += `<div class="combo-opt new-opt" data-val="${escapeHtml(typed)}">+ '${escapeHtml(typed)}' 새 제품으로 등록</div>`;
+      }
+      listEl.innerHTML = html || `<div class="combo-empty">검색 결과가 없어요</div>`;
+    }
+
+    function commit(val) {
+      current = val;
+      input.value = current;
+      close();
+      if (onChange) onChange(current);
     }
 
     function open() { render(''); comboEl.classList.add('open'); }
@@ -765,13 +793,28 @@
       const opt = e.target.closest('.combo-opt');
       if (!opt) return;
       e.preventDefault();
-      current = opt.dataset.val;
-      input.value = current;
-      close();
-      if (onChange) onChange(current);
+      commit(opt.dataset.val);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const exact = resolve(input.value);
+      if (allowNew) {
+        if (exact) commit(exact);
+      } else {
+        const first = listEl.querySelector('.combo-opt');
+        if (first) commit(first.dataset.val);
+      }
+      input.blur();
     });
     input.addEventListener('blur', () => {
       setTimeout(() => {
+        if (!comboEl.classList.contains('open')) return; // 이미 선택(commit)으로 닫힘
+        if (allowNew) {
+          // 직접 입력한 이름도 그대로 반영(비워두면 이전 값 유지)
+          const val = resolve(input.value);
+          if (val && val !== current) { commit(val); return; }
+        }
         if (input.value !== current) input.value = current; // 유효값으로 복원
         close();
       }, 150);
@@ -793,7 +836,17 @@
 
   const productCombo = makeCombo('productCombo',
     () => meta.productsByCategory[categoryCombo.value] || [],
-    () => scheduleCompare());
+    () => scheduleCompare(),
+    true);
+
+  // 기존 목록에 없는 제품명(새로 등록할 제품)인지
+  function isNewProduct(category, product) {
+    return !!product && !(meta.productsByCategory[category] || []).includes(product);
+  }
+
+  function isKnownElsewhere(product) {
+    return Object.values(meta.productsByCategory).some(list => list.includes(product));
+  }
 
   async function loadMeta() {
     const res = await fetch(`${APPS_SCRIPT_URL}?action=meta`);
@@ -807,7 +860,10 @@
 
   function fillProducts() {
     const products = meta.productsByCategory[categoryCombo.value] || [];
-    if (!isValid(productCombo.value, products)) {
+    const cur = productCombo.value;
+    // 직접 입력한 새 제품명은 카테고리를 바꿔도 유지, 다른 카테고리의 기존 제품이면 초기화
+    const keepNew = cur && !products.includes(cur) && !isKnownElsewhere(cur);
+    if (!keepNew && !isValid(cur, products)) {
       productCombo.set(products[0] || '', true);
     }
   }
@@ -840,8 +896,12 @@
     }
   }
 
-  function renderBadges(stats, u, inputPerGramG) {
+  function renderBadges(stats, u, inputPerGramG, isNew) {
     badgesEl.innerHTML = '';
+    if (isNew) {
+      badgesEl.innerHTML = `<div class="badge neutral">새 제품이에요 · 저장하면 제품 목록에 추가돼요</div>`;
+      return;
+    }
     if (!stats) {
       badgesEl.innerHTML = `<div class="badge neutral">아직 이 제품의 구매 기록이 없어요</div>`;
       return;
@@ -942,7 +1002,8 @@
     const category = categoryCombo.value;
     const product = productCombo.value;
     if (!isValid(category, meta.categories)) return;
-    if (!isValid(product, meta.productsByCategory[category] || [])) return;
+    if (!product) return;
+    const isNew = isNewProduct(category, product);
     const u = catUnit(category);
     const w = parseFloat(weightEl.value) || 0;
     const p = parseFloat(priceEl.value) || 0;
@@ -957,7 +1018,7 @@
     const data = await res.json();
     if (seq !== compareSeq) return; // 더 최신 요청이 있으면 오래된 응답은 무시
 
-    renderBadges(data.productStats, u, inputPerGramG);
+    renderBadges(data.productStats, u, inputPerGramG, isNew);
     renderStats(data.productStats, u, totalNative);
     renderCompare(data.categoryComparison, product, u);
   }
@@ -975,8 +1036,10 @@
     const qty = getQty();
     const note = noteEl.value.trim();
     if (!isValid(category, meta.categories)) return;
-    if (!isValid(product, meta.productsByCategory[category] || [])) return;
+    if (!product) return;
     if (!w || !p) return;
+    if (isNewProduct(category, product) &&
+        !confirm(`'${product}'을(를) ${category}의 새 제품으로 등록할까요?`)) return;
 
     const u = catUnit(category);
     const weightGrams = w * u.toG;
